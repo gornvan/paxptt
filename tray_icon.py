@@ -1,7 +1,7 @@
 import os
 import threading
 
-os.environ.setdefault("PYSTRAY_BACKEND", "gtk")
+os.environ.setdefault("PYSTRAY_BACKEND", "appindicator")
 
 from PIL import Image, ImageDraw
 import pystray

@@ -1,3 +1,4 @@
+# on a zypper-based system - libayatana-appindicator3-1, typelib-1_0-AyatanaAppIndicator3-0_1
 pillow==12.1.1
 pystray==0.19.5
 python-xlib==0.33
