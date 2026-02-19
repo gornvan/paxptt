@@ -22,7 +22,7 @@ def main():
 
     PulseMute.mute()
     tray.set_icon_state(False)
-    print(f"All mics muted. Hold mouse button {button} to talk.")
+    print(f"All mics muted. Hold mouse button {button} to talk. Enjoy your privacy.")
 
     if config["SHOW_TRAY_ICON"]:
         tray.show_icon(
@@ -40,7 +40,7 @@ def main():
 
     tray.hide_icon()
     PulseMute.unmute()
-    print("Mics restored. Bye.")
+    print("Mics restored. No more privacy. Have a nice day.")
 
 
 if __name__ == "__main__":
