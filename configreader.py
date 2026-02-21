@@ -7,6 +7,7 @@ CONFIG_PATH = CONFIG_DIR / "config.yml"
 
 DEFAULTS = {
     "BIND_MOUSE_BUTTON": 9,
+    "BIND_KEYBOARD_KEY": 66,
     "SHOW_TRAY_ICON": True,
 }
 

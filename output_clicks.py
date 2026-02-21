@@ -1,4 +1,4 @@
-from mouse_bind import MouseBinder
+from bind_mouse import MouseBinder
 
 
 def main():
