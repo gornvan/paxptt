@@ -55,7 +55,7 @@ def main():
 
             try:
                 while True:
-                    pass
+                    time.sleep(0.5)
             except KeyboardInterrupt:
                 pass
 
