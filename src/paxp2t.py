@@ -45,7 +45,7 @@ def main():
                 on_release=on_release,
             )
 
-        with KeyboardBinder() as kb:
+        with KeyboardBinder() as keyboard_binder:
             if bound_kbkey:
                 keyboard_binder.bind(
                     key=bound_kbkey,
