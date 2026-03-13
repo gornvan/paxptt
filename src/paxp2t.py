@@ -1,5 +1,5 @@
 import subprocess
-
+import time
 from configreader import read_config, CONFIG_PATH
 from bind_mouse import MouseBinder
 from pulse_mute import PulseMute
@@ -48,11 +48,9 @@ def main():
     print(f"All mics muted. Hold mouse button {bound_mousebtn} to talk. Enjoy your privacy.")
 
     if config["SHOW_TRAY_ICON"]:
-    
-  
-    with MouseBinder() as mouse_binder:
-        keyboard_binder = KeyboardBinder()
+        tray.show_icon(click_handler=_open_config_file)
 
+    with MouseBinder() as mouse_binder:
         if bound_mousebtn:
             mouse_binder.bind(
                 button=bound_mousebtn,
