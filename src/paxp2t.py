@@ -7,6 +7,24 @@ from tray_icon import TrayIcon
 from sound import ensure_sounds, play_sound, UNMUTE_SOUND_PATH, MUTE_SOUND_PATH
 from bind_kbd import KeyboardBinder
 
+
+def _open_config_file():
+    # Prefer portal-aware openers, then host opener if running in Flatpak.
+    openers = (
+        ["xdg-open", str(CONFIG_PATH)],
+        ["gio", "open", str(CONFIG_PATH)],
+        ["flatpak-spawn", "--host", "xdg-open", str(CONFIG_PATH)],
+    )
+    for command in openers:
+        try:
+            subprocess.Popen(command)
+            return
+        except FileNotFoundError:
+            continue
+        except Exception as exc:
+            print(f"Config open failed with {command[0]}: {exc}")
+
+
 def main():
     config = read_config()
     bound_mousebtn = config["BIND_MOUSE_BUTTON"]
@@ -30,9 +48,6 @@ def main():
     print(f"All mics muted. Hold mouse button {bound_mousebtn} to talk. Enjoy your privacy.")
 
     if config["SHOW_TRAY_ICON"]:
-        tray.show_icon(
-            click_handler=lambda: subprocess.Popen(["xdg-open", str(CONFIG_PATH)])
-        )
     
   
     with MouseBinder() as mouse_binder:
