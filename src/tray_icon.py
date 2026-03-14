@@ -32,18 +32,24 @@ class TrayIcon:
         self._icon = None
         self._thread = None
 
-    def show_icon(self, click_handler=None):
+    def show_icon(self, on_open_config=None, on_terminate=None):
         """Show the tray icon. Starts muted (gray).
 
         Args:
-            click_handler: Optional callable invoked on left-click.
+            on_open_config: Optional callable invoked by "Open config".
+            on_terminate: Optional callable invoked by "Terminate".
         """
-        def on_activate(icon, item):
-            if click_handler:
-                click_handler()
+        def _handle_open_config(icon, item):
+            if on_open_config:
+                on_open_config()
+
+        def _handle_terminate(icon, item):
+            if on_terminate:
+                on_terminate()
 
         menu = pystray.Menu(
-            pystray.MenuItem("Open config", on_activate, default=True),
+            pystray.MenuItem("Open config", _handle_open_config, default=True),
+            pystray.MenuItem("Terminate", _handle_terminate),
         )
 
         self._icon = pystray.Icon(

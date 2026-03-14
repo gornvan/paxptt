@@ -1,5 +1,6 @@
 import subprocess
 import time
+import threading
 from configreader import read_config, CONFIG_PATH
 from bind_mouse import MouseBinder
 from pulse_mute import PulseMute
@@ -31,6 +32,7 @@ def main():
     bound_kbkey = config["BIND_KEYBOARD_KEY"]
     ensure_sounds()
     tray = TrayIcon()
+    terminate_requested = threading.Event()
 
     def on_press(_btn):
         print("on_press: ", _btn)
@@ -48,7 +50,10 @@ def main():
     print(f"All mics muted. Hold mouse button {bound_mousebtn} to talk. Enjoy your privacy.")
 
     if config["SHOW_TRAY_ICON"]:
-        tray.show_icon(click_handler=_open_config_file)
+        tray.show_icon(
+            on_open_config=_open_config_file,
+            on_terminate=terminate_requested.set,
+        )
 
     with MouseBinder() as mouse_binder:
         if bound_mousebtn:
@@ -67,7 +72,7 @@ def main():
                 )
 
             try:
-                while True:
+                while not terminate_requested.is_set():
                     time.sleep(0.5)
             except KeyboardInterrupt:
                 pass
