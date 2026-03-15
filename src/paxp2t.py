@@ -2,7 +2,7 @@ import subprocess
 import time
 import threading
 
-from configreader import read_config, CONFIG_PATH
+from configmngr import read_config, CONFIG_PATH
 from bind_mouse import MouseBinder
 from pulse_mute import PulseMute
 from tray_icon import TrayIcon
