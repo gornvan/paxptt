@@ -1,6 +1,7 @@
 import subprocess
 import time
 import threading
+
 from configreader import read_config, CONFIG_PATH
 from bind_mouse import MouseBinder
 from pulse_mute import PulseMute
@@ -28,28 +29,53 @@ def _open_config_file():
 
 def main():
     config = read_config()
-    bound_mousebtn = config["BIND_MOUSE_BUTTON"]
-    bound_kbkey = config["BIND_KEYBOARD_KEY"]
+    bound_mousebtn = config.BIND_MOUSE_BUTTON
+    bound_kbkey = config.BIND_KEYBOARD_KEY
+    mute_delay_s = config.MUTE_DELAY_MS / 1000.0
     ensure_sounds()
     tray = TrayIcon()
     terminate_requested = threading.Event()
+    state_lock = threading.Lock()
+    ptt_is_down = False
 
-    def on_press(_btn):
-        print("on_press: ", _btn)
-        play_sound(UNMUTE_SOUND_PATH)
-        PulseMute.unmute()
-        tray.set_icon_state(True)
-
-    def on_release(_btn):
-        play_sound(MUTE_SOUND_PATH)
+    def apply_mute():
         PulseMute.mute()
         tray.set_icon_state(False)
+        play_sound(MUTE_SOUND_PATH)
+
+    def schedule_mute():
+        def delayed_mute():
+            with state_lock:
+                if ptt_is_down:
+                    return
+            apply_mute()
+
+        timer = threading.Timer(mute_delay_s, delayed_mute)
+        timer.daemon = True
+        timer.start()
+
+    def on_press(_btn):
+        nonlocal ptt_is_down
+        with state_lock:
+            should_unmute = not ptt_is_down
+            ptt_is_down = True
+
+        if should_unmute:
+            play_sound(UNMUTE_SOUND_PATH)
+            PulseMute.unmute()
+            tray.set_icon_state(True)
+
+    def on_release(_btn):
+        nonlocal ptt_is_down
+        with state_lock:
+            ptt_is_down = False
+        schedule_mute()
 
     PulseMute.mute()
     tray.set_icon_state(False)
     print(f"All mics muted. Hold mouse button {bound_mousebtn} to talk. Enjoy your privacy.")
 
-    if config["SHOW_TRAY_ICON"]:
+    if config.SHOW_TRAY_ICON:
         tray.show_icon(
             on_open_config=_open_config_file,
             on_terminate=terminate_requested.set,
@@ -76,8 +102,6 @@ def main():
                     time.sleep(0.5)
             except KeyboardInterrupt:
                 pass
-
-    keyboard_binder.stop()
 
     tray.hide_icon()
     PulseMute.unmute()
