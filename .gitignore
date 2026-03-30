@@ -1,3 +1,5 @@
 venv/
 __pycache__/
 plans/
+build-cpp/
+cpp/flatpak/
