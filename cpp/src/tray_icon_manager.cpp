@@ -11,7 +11,7 @@
 TrayIconManager::TrayIconManager(QObject *parent)
     : QObject(parent),
       activeIcon_(makeCircleIcon(QColor("#4CAF50"))),
-      inactiveIcon_(makeCircleIcon(QColor("#888888"))) {
+      inactiveIcon_(makeCircleIcon(QColor("#6666aa"))) {
 }
 
 TrayIconManager::~TrayIconManager() {

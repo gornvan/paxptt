@@ -32,7 +32,8 @@ void openConfigFile(const QString &path) {
             return;
         }
     }
-    qCritical() << "Failed to open config file with any of the following commands:" << candidates.join(", ");
+    qCritical() << "Failed to open config file with any of the following commands:";
+    qCritical() << "`xdg-open`, `gio open`, `flatpak spawn --host xdg-open`";
     qCritical() << "Please check if any of the commands is available in your PATH.";
     qCritical() << "You can manually open the config file at " << path;
 }
