@@ -8,14 +8,12 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(X11 REQUIRED)
 
+file(GLOB CPP_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+
 add_executable(paxp2t-cpp
-    src/main.cpp
-    src/config_manager.cpp
-    src/pulse_audio_controller.cpp
-    src/sound_controller.cpp
-    src/tray_icon_manager.cpp
-    src/mouse_binder.cpp
-    src/keyboard_binder.cpp
+    ${CPP_SOURCES}
 )
 
 target_include_directories(paxp2t-cpp PRIVATE include)
