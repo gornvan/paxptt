@@ -19,6 +19,7 @@ public:
     void setIconState(bool active);
 
 private:
+    void loadIcons();
     static QIcon makeCircleIcon(const QColor &color);
 
     QIcon activeIcon_;

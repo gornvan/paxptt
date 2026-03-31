@@ -10,12 +10,23 @@ by either a mouse or a keyboard button.
 - Sound indication of unmute/mute actions via `paplay`
   - sounds stored as `.wav` under `~/.local/paxp2t/sounds/`, easy to replace
 - Tray icon via `QSystemTrayIcon` with:
-  - a circle icon switching color on unmute/mute
+  - a tray icon, toggling its color
   - `Open config`
   - `Terminate`
 - Typed config read/backfill/rewrite at:
   - `~/.local/paxp2t/config.yml`
 
+## Configurability
+### Binds
+By default, the bound buttons are
+- FORWARD (mouse 9) on the mouse
+- CAPSLOCK (kb ) on the keyboard
+Set to `0` if You want to unbind any of them
+Set to any number from this schema to bind to corresponding mouse button or key:
+
+### Icons
+After first run, You can replace the icons under `~/.local/paxp2t/icons/` with any svg You like.
+Changing color is easy - just edit the .svg icons with a text editor and replace the color code of `fill` value in the `circle` tag.
 
 ## Considerations
 - Cannot mute sources selectively - do not expect _any_ of pulseaudio inputs to stay unmuted while paxp2t is active;

@@ -3,15 +3,90 @@
 #include <QAction>
 #include <QColor>
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QMenu>
 #include <QPainter>
 #include <QPixmap>
 #include <QSystemTrayIcon>
 
+namespace {
+
+QString trayIconsDirPath() {
+    return QDir::homePath() + "/.local/paxp2t/icons";
+}
+
+QString activeTrayIconPath() {
+    return trayIconsDirPath() + "/unmuted.svg";
+}
+
+QString inactiveTrayIconPath() {
+    return trayIconsDirPath() + "/muted.svg";
+}
+
+QString defaultCircleSvg(const QString &color) {
+    return QStringLiteral(
+               R"(<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<circle cx="32" cy="32" r="28" fill="%1"/>
+</svg>
+)")
+        .arg(color);
+}
+
+void ensureIconFile(const QString &path, const QString &svgContent) {
+    if (QFileInfo::exists(path)) {
+        return;
+    }
+
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        qWarning() << "Failed to create tray icon file:" << path;
+        return;
+    }
+    file.write(svgContent.toUtf8());
+}
+
+void ensureTrayIconFiles() {
+    QDir dir(trayIconsDirPath());
+    if (!dir.exists() && !dir.mkpath(".")) {
+        qWarning() << "Failed to create tray icon directory:" << trayIconsDirPath();
+        return;
+    }
+
+    ensureIconFile(activeTrayIconPath(), defaultCircleSvg("#4CAF50"));
+    ensureIconFile(inactiveTrayIconPath(), defaultCircleSvg("#6666aa"));
+}
+
+QIcon loadIconOrFallback(const QString &path, const QIcon &fallback) {
+    if (!QFileInfo::exists(path)) {
+        return fallback;
+    }
+
+    QIcon icon(path);
+    if (icon.isNull()) {
+        qWarning() << "Failed to load tray icon from file:" << path;
+        return fallback;
+    }
+    return icon;
+}
+
+} // namespace
+
 TrayIconManager::TrayIconManager(QObject *parent)
-    : QObject(parent),
-      activeIcon_(makeCircleIcon(QColor("#4CAF50"))),
-      inactiveIcon_(makeCircleIcon(QColor("#6666aa"))) {
+    : QObject(parent) {
+    loadIcons();
+}
+
+void TrayIconManager::loadIcons() {
+    const QIcon defaultActiveIcon = makeCircleIcon(QColor("#4CAF50"));
+    const QIcon defaultInactiveIcon = makeCircleIcon(QColor("#6666aa"));
+
+    ensureTrayIconFiles();
+
+    activeIcon_ = loadIconOrFallback(activeTrayIconPath(), defaultActiveIcon);
+    inactiveIcon_ = loadIconOrFallback(inactiveTrayIconPath(), defaultInactiveIcon);
 }
 
 TrayIconManager::~TrayIconManager() {
