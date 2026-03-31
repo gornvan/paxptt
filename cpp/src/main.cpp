@@ -9,7 +9,7 @@
 #include "config_manager.hpp"
 #include "keyboard_binder.hpp"
 #include "mouse_binder.hpp"
-#include "pulse_audio_controller.hpp"
+#include "pulseaudio_controller.hpp"
 #include "sound_controller.hpp"
 #include "tray_icon_manager.hpp"
 

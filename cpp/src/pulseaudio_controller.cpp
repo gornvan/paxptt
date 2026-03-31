@@ -1,4 +1,4 @@
-#include "pulse_audio_controller.hpp"
+#include "pulseaudio_controller.hpp"
 
 #include <QDebug>
 #include <QProcess>
