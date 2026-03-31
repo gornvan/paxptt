@@ -7,12 +7,15 @@ by either a mouse or a keyboard button.
 
 - X11 global mouse/keyboard bindings via XRecord
 - PulseAudio total source mute/unmute via `pactl`
+- Sound indication of unmute/mute actions via `paplay`
+  - sounds stored as `.wav` under `~/.local/paxp2t/sounds/`, easy to replace
 - Tray icon via `QSystemTrayIcon` with:
   - dynamic gray/green circle icon
   - `Open config`
   - `Terminate`
 - Typed config read/backfill/rewrite at:
   - `~/.local/paxp2t/config.yml`
+
 
 ## Considerations
 - Cannot mute sources selectively - do not expect _any_ of pulseaudio inputs to stay unmuted while paxp2t is active;
