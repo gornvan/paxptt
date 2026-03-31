@@ -8,6 +8,7 @@ struct AppConfig {
     int bindKeyboardKey = 66;
     bool showTrayIcon = true;
     int muteDelayMs = 0;
+    bool cacheInputs = true;
 };
 
 class ConfigManager {

@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     const AppConfig config = ConfigManager::readConfig();
 
-    PulseAudioController pulse;
+    PulseAudioController pulse(config.cacheInputs);
     SoundController sound;
     TrayIconManager tray;
     MouseBinder mouseBinder;

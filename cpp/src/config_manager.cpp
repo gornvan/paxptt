@@ -99,6 +99,15 @@ AppConfig ConfigManager::readConfig() {
             }
             continue;
         }
+        if (key == "CACHE_INPUTS") {
+            bool out = defaults.cacheInputs;
+            if (parseBool(value, out)) {
+                parsed.cacheInputs = out;
+            } else {
+                needsRewrite = true;
+            }
+            continue;
+        }
 
         extras.insert(key, value);
     }
@@ -124,7 +133,8 @@ AppConfig ConfigManager::readConfig() {
         if (!content.contains("BIND_MOUSE_BUTTON:") ||
             !content.contains("BIND_KEYBOARD_KEY:") ||
             !content.contains("SHOW_TRAY_ICON:") ||
-            !content.contains("MUTE_DELAY_MS:")) {
+            !content.contains("MUTE_DELAY_MS:") ||
+            !content.contains("CACHE_INPUTS:")) {
             writeConfig(parsed, extras);
         }
     }
@@ -171,6 +181,7 @@ bool ConfigManager::writeConfig(const AppConfig &config, const QVariantMap &extr
     out << "BIND_KEYBOARD_KEY: " << config.bindKeyboardKey << "\n";
     out << "SHOW_TRAY_ICON: " << toYamlBool(config.showTrayIcon) << "\n";
     out << "MUTE_DELAY_MS: " << qMax(0, config.muteDelayMs) << "\n";
+    out << "CACHE_INPUTS: " << toYamlBool(config.cacheInputs) << "\n";
 
     for (auto it = extraKeys.constBegin(); it != extraKeys.constEnd(); ++it) {
         out << it.key() << ": " << it.value().toString() << "\n";

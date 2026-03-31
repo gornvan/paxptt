@@ -3,7 +3,24 @@
 #include <QDebug>
 #include <QProcess>
 
+PulseAudioController::PulseAudioController(bool cacheInputs)
+    : m_cacheInputs(cacheInputs) {
+}
+
 QStringList PulseAudioController::recordingSources() const {
+    if (!m_cacheInputs) {
+        return queryRecordingSources();
+    }
+
+    if (!m_sourcesCached) {
+        m_cachedSources = queryRecordingSources();
+        m_sourcesCached = true;
+    }
+
+    return m_cachedSources;
+}
+
+QStringList PulseAudioController::queryRecordingSources() const {
     QProcess process;
     process.start("pactl", {"list", "sources", "short"});
     if (!process.waitForFinished(3000)) {
