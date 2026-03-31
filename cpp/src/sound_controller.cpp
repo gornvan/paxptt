@@ -5,7 +5,6 @@
 #include <QProcess>
 #include <QtEndian>
 #include <cmath>
-#include <cstdint>
 
 namespace {
 

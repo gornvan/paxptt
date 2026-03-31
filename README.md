@@ -10,7 +10,7 @@ by either a mouse or a keyboard button.
 - Sound indication of unmute/mute actions via `paplay`
   - sounds stored as `.wav` under `~/.local/paxp2t/sounds/`, easy to replace
 - Tray icon via `QSystemTrayIcon` with:
-  - dynamic gray/green circle icon
+  - a circle icon switching color on unmute/mute
   - `Open config`
   - `Terminate`
 - Typed config read/backfill/rewrite at:
