@@ -13,13 +13,13 @@ file(GLOB CPP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
-add_executable(paxp2t-cpp
+add_executable(paxp2t
     ${CPP_SOURCES}
 )
 
-target_include_directories(paxp2t-cpp PRIVATE include)
+target_include_directories(paxp2t PRIVATE include)
 
-target_link_libraries(paxp2t-cpp PRIVATE
+target_link_libraries(paxp2t PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -27,4 +27,4 @@ target_link_libraries(paxp2t-cpp PRIVATE
     Xtst
 )
 
-install(TARGETS paxp2t-cpp RUNTIME DESTINATION bin)
+install(TARGETS paxp2t RUNTIME DESTINATION bin)

@@ -32,7 +32,7 @@ cmake --build build-cpp -j
 Run:
 
 ```bash
-./build-cpp/paxp2t-cpp
+./build-cpp/paxp2t
 ```
 
 ## Notes

@@ -42,7 +42,7 @@ void openConfigFile(const QString &path) {
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    app.setApplicationName("paxp2t-cpp");
+    app.setApplicationName("paxp2t");
 
     const QString sessionType = qEnvironmentVariable("XDG_SESSION_TYPE").toLower();
     if (sessionType != "x11") {
