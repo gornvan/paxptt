@@ -60,4 +60,4 @@ Run:
 ## Notes
 
 - Won't work on Wayland-based systems or any other system with no X11-served displays.
-- On desktops without tray host support, the app keeps working without tray. If pulseaudio is available, the soudnd will indication will still work.
+- On desktops without tray host support, the app keeps working without tray. If pulseaudio is available, the soudnd indication will still work.
