@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake \
+            qt6-base-dev \
+            libx11-dev \
+            libxtst-dev
+
+      - name: Configure
+        run: cmake -S cpp -B build-cpp
+
+      - name: Build
+        run: cmake --build build-cpp -j "$(nproc)"
