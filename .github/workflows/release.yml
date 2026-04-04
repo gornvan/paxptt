@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake \
+            qt6-base-dev \
+            libx11-dev \
+            libxtst-dev
+
+      - name: Configure
+        run: cmake -S cpp -B build-cpp
+
+      - name: Build
+        run: cmake --build build-cpp -j "$(nproc)"
+
+      - name: Package binary
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          strip --strip-unneeded build-cpp/paxp2t
+          tar -czvf "paxp2t-${TAG_NAME}-linux-x86_64.tar.gz" -C build-cpp paxp2t
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: paxp2t-${{ github.ref_name }}-linux-x86_64.tar.gz
+          generate_release_notes: true
