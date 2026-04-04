@@ -72,10 +72,9 @@ AppConfig ConfigManager::readConfig() {
             }
             continue;
         }
-        if (key == "BIND_KEYBOARD_KEY") {
-            int out = defaults.bindKeyboardKey;
-            if (parseInt(value, out)) {
-                parsed.bindKeyboardKey = out;
+        if (key == "BIND_KEYBOARD_KEYSYM") {
+            if (!value.trimmed().isEmpty()) {
+                parsed.bindKeyboardKeysym = value.trimmed();
             } else {
                 needsRewrite = true;
             }
@@ -114,7 +113,7 @@ AppConfig ConfigManager::readConfig() {
 
     const bool missingKnown =
         !extras.contains("BIND_MOUSE_BUTTON") &&
-        !extras.contains("BIND_KEYBOARD_KEY") &&
+        !extras.contains("BIND_KEYBOARD_KEYSYM") &&
         !extras.contains("SHOW_TRAY_ICON") &&
         !extras.contains("MUTE_DELAY_MS");
 
@@ -131,7 +130,7 @@ AppConfig ConfigManager::readConfig() {
     if (verifyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         const QString content = QString::fromUtf8(verifyFile.readAll());
         if (!content.contains("BIND_MOUSE_BUTTON:") ||
-            !content.contains("BIND_KEYBOARD_KEY:") ||
+            !content.contains("BIND_KEYBOARD_KEYSYM:") ||
             !content.contains("SHOW_TRAY_ICON:") ||
             !content.contains("MUTE_DELAY_MS:") ||
             !content.contains("CACHE_INPUTS:")) {
@@ -178,7 +177,7 @@ bool ConfigManager::writeConfig(const AppConfig &config, const QVariantMap &extr
 
     QTextStream out(&file);
     out << "BIND_MOUSE_BUTTON: " << config.bindMouseButton << "\n";
-    out << "BIND_KEYBOARD_KEY: " << config.bindKeyboardKey << "\n";
+    out << "BIND_KEYBOARD_KEYSYM: " << config.bindKeyboardKeysym << "\n";
     out << "SHOW_TRAY_ICON: " << toYamlBool(config.showTrayIcon) << "\n";
     out << "MUTE_DELAY_MS: " << qMax(0, config.muteDelayMs) << "\n";
     out << "CACHE_INPUTS: " << toYamlBool(config.cacheInputs) << "\n";

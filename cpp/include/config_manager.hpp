@@ -5,7 +5,7 @@
 
 struct AppConfig {
     int bindMouseButton = 9;
-    int bindKeyboardKey = 66;
+    QString bindKeyboardKeysym = "Caps_Lock";
     bool showTrayIcon = true;
     int muteDelayMs = 0;
     bool cacheInputs = true;

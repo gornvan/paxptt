@@ -18,11 +18,22 @@ by either a mouse or a keyboard button.
 
 ## Configurability
 ### Binds
-By default, the bound buttons are
-- FORWARD (mouse 9) on the mouse
-- CAPSLOCK (kb ) on the keyboard
-Set to `0` if You want to unbind any of them
-Set to any number from this schema to bind to corresponding mouse button or key:
+By default, the bound buttons are:
+- mouse button `9` (FORWARD)
+- X11 keysym `Caps_Lock`
+
+Set `BIND_MOUSE_BUTTON` to `0` to unbind mouse PTT.
+Set `BIND_KEYBOARD_KEYSYM` to `None` to unbind keyboard PTT.
+
+Keyboard binding uses **X11 keysyms** (names like `Caps_Lock`, `F24`, `Pause`).
+
+To discover the keysym for a key, run this in a terminal; each keypress prints the keysym name:
+```bash
+# xev might need to be installed
+xev -event keyboard | grep --line-buffered keycode | sed -E 's/.*, ([^,^\)]*)\).*/\1/'
+```
+Then set `BIND_KEYBOARD_KEYSYM: <name>` in `~/.local/paxp2t/config.yml` \
+(for example `BIND_KEYBOARD_KEYSYM: Caps_Lock`).
 
 ### Icons
 After first run, You can replace the icons under `~/.local/paxp2t/icons/` with any svg You like.

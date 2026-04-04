@@ -38,6 +38,35 @@ void openConfigFile(const QString &path) {
     qCritical() << "You can manually open the config file at " << path;
 }
 
+int resolveKeycodeFromKeysym(const QString &keysymName) {
+    const QString trimmed = keysymName.trimmed();
+    if (trimmed.isEmpty() || trimmed.compare("none", Qt::CaseInsensitive) == 0) {
+        return 0;
+    }
+
+    const QByteArray keysymUtf8 = trimmed.toUtf8();
+    const KeySym keysym = XStringToKeysym(keysymUtf8.constData());
+    if (keysym == NoSymbol) {
+        qWarning() << "Invalid X11 keysym in config:" << keysymName;
+        return -1;
+    }
+
+    Display *display = XOpenDisplay(nullptr);
+    if (!display) {
+        qWarning() << "Unable to open X display while resolving keysym:" << keysymName;
+        return -1;
+    }
+
+    const KeyCode keycode = XKeysymToKeycode(display, keysym);
+    XCloseDisplay(display);
+    if (keycode == 0) {
+        qWarning() << "X11 keysym is not mapped to any keycode on this layout:" << keysymName;
+        return -1;
+    }
+
+    return static_cast<int>(keycode);
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -103,8 +132,9 @@ int main(int argc, char *argv[]) {
     if (config.bindMouseButton > 0) {
         mouseBinder.bind(config.bindMouseButton, onPress, onRelease);
     }
-    if (config.bindKeyboardKey > 0) {
-        keyboardBinder.bind(config.bindKeyboardKey, onPress, onRelease);
+    const int keyboardKeycode = resolveKeycodeFromKeysym(config.bindKeyboardKeysym);
+    if (keyboardKeycode > 0) {
+        keyboardBinder.bind(keyboardKeycode, onPress, onRelease);
     }
 
     const int exitCode = app.exec();
