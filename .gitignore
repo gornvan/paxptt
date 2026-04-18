@@ -3,3 +3,4 @@ __pycache__/
 plans/
 build-cpp/
 cpp/flatpak/
+/packaging/

@@ -57,6 +57,30 @@ Run:
 ./build-cpp/paxp2t
 ```
 
+## Releases (portable Linux)
+
+Tagged releases (e.g. `git push origin v0.1.0`) build a **portable tree** with [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) and the **Qt plugin**, so Qt libraries and plugins are shipped next to the binary instead of relying on system Qt.
+
+The release job uses **`PAXP2T_RELEASE_MINIMAL=ON`** (smaller Release flags: `-Os`, section GC, `--as-needed`), **strips** the main binary, then **strips** bundled `.so` files where possible so the archive stays lean. Local Release builds can use the same flag if you want parity:
+
+```bash
+cmake -S cpp -B build-cpp -DCMAKE_BUILD_TYPE=Release -DPAXP2T_RELEASE_MINIMAL=ON
+```
+
+Extract the archive and run:
+
+```bash
+tar xf paxp2t-v0.1.0-linux-x86_64-portable.tar.gz
+cd paxp2t-v0.1.0-linux-x86_64-portable
+./AppRun
+```
+
+You still need a normal desktop stack on the host (X11, PulseAudio or PipeWire-Pulse, etc.); the bundle mainly removes the “install Qt6 from the distro” requirement.
+
+### Flatpak later
+
+Flatpak does **not** usually mean “one binary with Qt embedded.” It means the app is packaged against a **runtime** (for example a KDE/Qt runtime) declared in a manifest, plus your files. Bundling with linuxdeploy is still useful as a stepping stone or for non-Flatpak distribution; a Flatpak manifest would declare dependencies differently.
+
 ## Notes
 
 - Won't work on Wayland-based systems or any other system with no X11-served displays.
