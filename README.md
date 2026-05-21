@@ -47,11 +47,13 @@ Changing color is easy - just edit the .svg icons with a text editor and replace
 ## Build
 
 ```bash
+# Configure the project: source dir is 'cpp', build dir is 'build-cpp'
 cmake -S cpp -B build-cpp
+# Build the project in 'build-cpp'; '-j' speeds up build using all CPU cores
 cmake --build build-cpp -j
 ```
 
-Run:
+### Run:
 
 ```bash
 ./build-cpp/paxp2t
