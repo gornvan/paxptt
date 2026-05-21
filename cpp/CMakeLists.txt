@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(paxp2t_cpp VERSION 0.1.0 LANGUAGES CXX)
+project(paxp2t VERSION 0.1.0 LANGUAGES CXX)
 
 option(PAXP2T_RELEASE_MINIMAL "Release: optimize for size (-Os, --gc-sections, --as-needed)" OFF)
 if(PAXP2T_RELEASE_MINIMAL)
