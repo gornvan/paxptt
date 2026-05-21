@@ -4,11 +4,11 @@
 #include <QVariantMap>
 
 struct AppConfig {
-    int bindMouseButton = 9;
     QString bindKeyboardKeysym = "Caps_Lock";
-    bool showTrayIcon = true;
-    int muteDelayMs = 0;
+    int bindMouseButton = 9;
     bool cacheInputs = true;
+    int muteDelayMs = 0;
+    bool showTrayIcon = true;
 };
 
 class ConfigManager {

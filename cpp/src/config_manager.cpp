@@ -176,11 +176,11 @@ bool ConfigManager::writeConfig(const AppConfig &config, const QVariantMap &extr
     }
 
     QTextStream out(&file);
-    out << "BIND_MOUSE_BUTTON: " << config.bindMouseButton << "\n";
     out << "BIND_KEYBOARD_KEYSYM: " << config.bindKeyboardKeysym << "\n";
-    out << "SHOW_TRAY_ICON: " << toYamlBool(config.showTrayIcon) << "\n";
-    out << "MUTE_DELAY_MS: " << qMax(0, config.muteDelayMs) << "\n";
+    out << "BIND_MOUSE_BUTTON: " << config.bindMouseButton << "\n";
     out << "CACHE_INPUTS: " << toYamlBool(config.cacheInputs) << "\n";
+    out << "MUTE_DELAY_MS: " << qMax(0, config.muteDelayMs) << "\n";
+    out << "SHOW_TRAY_ICON: " << toYamlBool(config.showTrayIcon) << "\n";
 
     for (auto it = extraKeys.constBegin(); it != extraKeys.constEnd(); ++it) {
         out << it.key() << ": " << it.value().toString() << "\n";
