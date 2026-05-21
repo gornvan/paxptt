@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=paxp2t
+Comment=Push-to-talk (X11, PulseAudio)
+Exec=paxp2t
+Icon=paxp2t
+Categories=AudioVideo;Audio;

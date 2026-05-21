@@ -54,6 +54,7 @@ jobs:
             https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
+      # packaging/paxp2t.desktop must be committed (never gitignore the whole packaging/ directory).
       - name: Bundle Qt and dependencies (portable AppDir)
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"

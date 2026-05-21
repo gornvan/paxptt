@@ -3,4 +3,6 @@ __pycache__/
 plans/
 build-cpp/
 cpp/flatpak/
-/packaging/
+
+# CI/local may generate PNGs here; keep .desktop tracked
+packaging/*.png
