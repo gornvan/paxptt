@@ -46,6 +46,11 @@ Changing color is easy - just edit the .svg icons with a text editor and replace
 
 ## Build
 
+You need Qt6 development libraries including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not the optional image-format plugin):
+
+- Debian/Ubuntu: `qt6-base-dev`, `qt6-svg-dev`, `libx11-dev`, `libxtst-dev`
+- openSUSE: **`qt6-svg-devel`** installs `Qt6SvgConfig.cmake`; **`libQt6Svg6`** is runtime-only and will **not** satisfy CMake. Add base Qt build deps as for any Qt app (e.g. `qt6-core-private-devel` grouping varies — `zypper search -s qt6 svg` / `zypper wp /usr/lib64/cmake/Qt6Svg/Qt6SvgConfig.cmake`).
+
 ```bash
 # Configure the project: source dir is 'cpp', build dir is 'build-cpp'
 cmake -S cpp -B build-cpp
@@ -61,13 +66,24 @@ cmake --build build-cpp -j
 
 ## Releases (portable Linux)
 
-Tagged releases (e.g. `git push origin v0.1.0`) build a **portable tree** with [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) and the **Qt plugin**, so Qt libraries and plugins are shipped next to the binary instead of relying on system Qt.
+The GitHub Actions **Release** workflow and your machine can run the same script: [`.github/scripts/build-portable-bundle.sh`](.github/scripts/build-portable-bundle.sh).
 
-The release job uses **`PAXP2T_RELEASE_MINIMAL=ON`** (smaller Release flags: `-Os`, section GC, `--as-needed`), **strips** the main binary, then **strips** bundled `.so` files where possible so the archive stays lean. Local Release builds can use the same flag if you want parity:
+### Dry-run locally (no GitHub Release)
+
+From the repo root, after installing build dependencies (same as README **Build**, including Qt Svg):
 
 ```bash
-cmake -S cpp -B build-cpp -DCMAKE_BUILD_TYPE=Release -DPAXP2T_RELEASE_MINIMAL=ON
+.github/scripts/build-portable-bundle.sh               # RELEASE_VERSION defaults to git describe or local-<timestamp>
+.github/scripts/build-portable-bundle.sh v9.9.9-test # optional explicit name for the tarball
 ```
+
+The tarball is written to **`dist/`** (`OUT_DIR`; override with env). linuxdeploy downloads are cached under **`~/.cache/paxp2t-release-tools`** unless you set **`PAXP2T_RELEASE_TOOLS_DIR`**.
+
+Pushing a version tag triggers the **Release** workflow, which runs the same script with the tag name and uploads **`dist/paxp2t-<tag>-linux-x86_64-portable.tar.gz`** to GitHub Releases.
+
+That bundle is an **AppDir-style tree**: [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) plus the Qt plugin copy Qt libs next to the binary so recipients do not need system Qt packages.
+
+The script configures **`PAXP2T_RELEASE_MINIMAL=ON`** for smaller Release binaries (**`-Os`**, section **`--gc-sections`**, **`--as-needed`**), strips the executable and bundled **`*.so`**, then archives the portable directory. For an ordinary Release build without linuxdeploy you can apply the same flag when running CMake manually.
 
 Extract the archive and run:
 
