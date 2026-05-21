@@ -83,9 +83,17 @@ Pushing a version tag triggers the **Release** workflow, which runs the same scr
 
 That bundle is an **AppDir-style tree**: [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) plus the Qt plugin copy Qt libs next to the binary so recipients do not need system Qt packages.
 
-After bundling and **`strip`**, the script **`trim`**s obvious dead weight linuxdeploy tends to drag in anyway: **`translations`** (often tens of MiB of unused `.qm` locales), **`qml`** trees, **`sqldrivers`** (this app doesn’t use SQL), and distro **`usr/share/doc` / `man`**. Logs `du -sh` before and after. Set **`PAXP2T_SKIP_BUNDLE_TRIM=1`** if you ever need an untrimmed tree for debugging.
+After bundling and **`strip`**, the script **aggressively trims** leftovers linuxdeploy still copies:
 
-Remaining size is mostly **Qt Gui/Widgets/XCB + Svg** libraries and **`platformplugins`** (`libqxcb.so` loads the rest).
+- **`*.qm`** / translation dirs · **QML** · **sqldrivers** · **doc/man**
+- **Non-XCB platform plugins** (Wayland/offscreen leftovers; **`libqxcb.so` stays** only)
+- **`platformthemes`** and **Wayland** plugin dirs
+- **`plugins/tls`** (Qt OpenSSL backends) · **`plugins/multimedia`** · the whole **`plugins/imageformats`** tree (this app renders tray SVG via linked **Qt Svg**, not image plugins)
+- Fat **unused Qt libs** pulled in accidentally (Quick, QML, Vulkan, Charts, Multimedia, Qt Bluetooth/NFC/Serial/WebSockets, …) plus **`*.a`** and detached **`.debug`**
+
+It logs **`du -sh`** before and after. Set **`PAXP2T_SKIP_BUNDLE_TRIM=1`** for a fuller tree while debugging.
+
+What’s left is mostly **Qt Gui/Widgets/Core + Svg**, **XCB + X11-ish deps**, and **`libqxcb.so`**’s own dependencies.
 
 The script configures **`PAXP2T_RELEASE_MINIMAL=ON`** for smaller Release binaries (**`-Os`**, section **`--gc-sections`**, **`--as-needed`**), strips the executable and bundled **`*.so`**, then archives the portable directory. For an ordinary Release build without linuxdeploy you can apply the same flag when running CMake manually.
 

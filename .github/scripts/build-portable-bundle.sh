@@ -25,14 +25,15 @@ Environment:
   OUT_DIR                  Where to write tarball (default: dist)
   PAXP2T_RELEASE_TOOLS_DIR Cache for linuxdeploy AppImages (default: ~/.cache/paxp2t-release-tools)
   REGENERATE_PAXP2T_ICON=1 Replace packaging/paxp2t.png even if it exists
-  PAXP2T_SKIP_BUNDLE_TRIM=1  Skip post-bundle size trim (translations, qml, sqldrivers…)
+  PAXP2T_SKIP_BUNDLE_TRIM=1  Skip aggressive post-bundle trimming (translations, extras)
 
   -h, --help               Show this help
 EOF
 }
 
 trim_portable_bundle() {
-    local root="$1"
+    local root platdir f base dir
+    root="$1"
     if [[ "${PAXP2T_SKIP_BUNDLE_TRIM:-}" == "1" ]]; then
         echo "Skipping bundle trim (PAXP2T_SKIP_BUNDLE_TRIM=1)"
         return 0
@@ -41,10 +42,10 @@ trim_portable_bundle() {
         return 0
     fi
 
-    echo "Trimming portable bundle (${root})…"
+    echo "Aggressively trimming portable bundle (${root})…"
     du -sh "${root}" 2>/dev/null || true
 
-    # Qt installs often ship tens of megabytes of .qm locales this app never loads.
+    # --- Qt locales (directories + stray .qm) ---------------------------------
     rm -rf \
         "${root}/usr/share/qt/translations" \
         "${root}/usr/share/qt6/translations" \
@@ -52,16 +53,78 @@ trim_portable_bundle() {
         "${root}/translations" \
         "${root}/usr/lib/qt/translations" \
         "${root}/usr/lib/qt6/translations"
+    find "${root}" -type f -iname '*.qm' -delete || true
 
+    # --- QML / SQL (widgets app doesn't use these) ----------------------------
     rm -rf "${root}/usr/qml" "${root}/usr/lib/qml"
-
     while IFS= read -r -d '' dir; do
         rm -rf "$dir"
     done < <(find "${root}" -type d \( -path '*/qt6/qml' -o -path '*/qt/qml' \) -print0 2>/dev/null || true)
-
     while IFS= read -r -d '' dir; do
         rm -rf "$dir"
     done < <(find "${root}" -type d -path '*/plugins/sqldrivers' -print0 2>/dev/null || true)
+
+    # --- Platform: X11 only — keep libqxcb.so(+version), drop other QPA plugins -----
+    while IFS= read -r -d '' platdir; do
+        for f in "${platdir}"/*; do
+            [[ ! -f "$f" && ! -L "$f" ]] && continue
+            base="$(basename "$f")"
+            if [[ "${base}" == libqxcb.so || "${base}" == libqxcb.so.* ]]; then
+                continue
+            fi
+            rm -f "$f"
+        done
+    done < <(find "${root}" -type d -path '*/plugins/platforms' -print0 2>/dev/null || true)
+
+    while IFS= read -r -d '' dir; do
+        rm -rf "${dir:?}"
+    done < <(
+        find "${root}" -depth -type d \( \
+            -path '*/plugins/platformthemes' \
+            -o -path '*/plugins/wayland-*' \
+            \) -print0 2>/dev/null || true
+    )
+
+    # Qt6 QNetwork TLS backends (~OpenSSL blobs per variant); tray app loads no HTTPS assets.
+    while IFS= read -r -d '' dir; do
+        rm -rf "${dir:?}"
+    done < <(find "${root}" -depth -type d -path '*/plugins/tls' -print0 2>/dev/null || true)
+
+    while IFS= read -r -d '' dir; do
+        rm -rf "${dir:?}"
+    done < <(find "${root}" -depth -type d -path '*/plugins/multimedia' -print0 2>/dev/null || true)
+
+    # No QImage plugin loading needed: tray SVG loaded via QtSvg (linked). Drops codec pack.
+    while IFS= read -r -d '' dir; do
+        rm -rf "${dir:?}"
+    done < <(find "${root}" -depth -type d -path '*/plugins/imageformats' -print0 2>/dev/null || true)
+
+    # --- Unused Qt modules often bundled but not used by this app ---------------
+    find "${root}" -type f \( \
+        -name 'libQt6Quick*.so*' -o \
+        -name 'libQt6Qml*.so*' -o \
+        -name 'libQt6Quick3D*.so*' -o \
+        -name 'libQt6ShaderTools*.so*' -o \
+        -name 'libQt6Vulkan*.so*' -o \
+        -name 'libQt63D*.so*' -o \
+        -name 'libQt6Labs*.so*' -o \
+        -name 'libQt6Charts*.so*' -o \
+        -name 'libQt6DataVisualization*.so*' -o \
+        -name 'libQt6Multimedia*.so*' -o \
+        -name 'libQt6SpatialAudio*.so*' -o \
+        -name 'libQt6Positioning*.so*' -o \
+        -name 'libQt6WebChannel*.so*' -o \
+        -name 'libQt6WebSockets*.so*' -o \
+        -name 'libQt6Bluetooth*.so*' -o \
+        -name 'libQt6Nfc*.so*' -o \
+        -name 'libQt6SerialPort*.so*' -o \
+        -name 'libQt6Scxml*.so*' \
+        \) -delete 2>/dev/null || true
+
+    # CMake / dev cruft accidentally copied next to libs
+    find "${root}" -type f -name '*.a' -delete 2>/dev/null || true
+    # Strip detached debug payloads some distros stash next to libs
+    find "${root}" -type f \( -name '*.debug' -o -name '*.dwz' \) -delete || true
 
     rm -rf "${root}/usr/share/doc" "${root}/usr/share/man"
 
