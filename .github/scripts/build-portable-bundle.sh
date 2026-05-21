@@ -25,9 +25,48 @@ Environment:
   OUT_DIR                  Where to write tarball (default: dist)
   PAXP2T_RELEASE_TOOLS_DIR Cache for linuxdeploy AppImages (default: ~/.cache/paxp2t-release-tools)
   REGENERATE_PAXP2T_ICON=1 Replace packaging/paxp2t.png even if it exists
+  PAXP2T_SKIP_BUNDLE_TRIM=1  Skip post-bundle size trim (translations, qml, sqldrivers…)
 
   -h, --help               Show this help
 EOF
+}
+
+trim_portable_bundle() {
+    local root="$1"
+    if [[ "${PAXP2T_SKIP_BUNDLE_TRIM:-}" == "1" ]]; then
+        echo "Skipping bundle trim (PAXP2T_SKIP_BUNDLE_TRIM=1)"
+        return 0
+    fi
+    if [[ ! -d "$root" ]]; then
+        return 0
+    fi
+
+    echo "Trimming portable bundle (${root})…"
+    du -sh "${root}" 2>/dev/null || true
+
+    # Qt installs often ship tens of megabytes of .qm locales this app never loads.
+    rm -rf \
+        "${root}/usr/share/qt/translations" \
+        "${root}/usr/share/qt6/translations" \
+        "${root}/usr/translations" \
+        "${root}/translations" \
+        "${root}/usr/lib/qt/translations" \
+        "${root}/usr/lib/qt6/translations"
+
+    rm -rf "${root}/usr/qml" "${root}/usr/lib/qml"
+
+    while IFS= read -r -d '' dir; do
+        rm -rf "$dir"
+    done < <(find "${root}" -type d \( -path '*/qt6/qml' -o -path '*/qt/qml' \) -print0 2>/dev/null || true)
+
+    while IFS= read -r -d '' dir; do
+        rm -rf "$dir"
+    done < <(find "${root}" -type d -path '*/plugins/sqldrivers' -print0 2>/dev/null || true)
+
+    rm -rf "${root}/usr/share/doc" "${root}/usr/share/man"
+
+    echo "Trimmed bundle size:"
+    du -sh "${root}" 2>/dev/null || true
 }
 
 while [[ "${1:-}" == -* ]]; do
@@ -149,6 +188,8 @@ find "${REPO_ROOT}/${APPDIR_NAME}" -type f \( -name '*.so' -o -name '*.so.*' \) 
     | while IFS= read -r -d '' f; do
         strip --strip-unneeded "$f" 2>/dev/null || true
     done
+
+trim_portable_bundle "${REPO_ROOT}/${APPDIR_NAME}"
 
 PORTABLE_TOP="paxp2t-${RELEASE_VERSION}-linux-x86_64-portable"
 ARCHIVE_BASENAME="paxp2t-${RELEASE_VERSION}-linux-x86_64-portable.tar.gz"

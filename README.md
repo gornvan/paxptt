@@ -83,6 +83,10 @@ Pushing a version tag triggers the **Release** workflow, which runs the same scr
 
 That bundle is an **AppDir-style tree**: [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) plus the Qt plugin copy Qt libs next to the binary so recipients do not need system Qt packages.
 
+After bundling and **`strip`**, the script **`trim`**s obvious dead weight linuxdeploy tends to drag in anyway: **`translations`** (often tens of MiB of unused `.qm` locales), **`qml`** trees, **`sqldrivers`** (this app doesn’t use SQL), and distro **`usr/share/doc` / `man`**. Logs `du -sh` before and after. Set **`PAXP2T_SKIP_BUNDLE_TRIM=1`** if you ever need an untrimmed tree for debugging.
+
+Remaining size is mostly **Qt Gui/Widgets/XCB + Svg** libraries and **`platformplugins`** (`libqxcb.so` loads the rest).
+
 The script configures **`PAXP2T_RELEASE_MINIMAL=ON`** for smaller Release binaries (**`-Os`**, section **`--gc-sections`**, **`--as-needed`**), strips the executable and bundled **`*.so`**, then archives the portable directory. For an ordinary Release build without linuxdeploy you can apply the same flag when running CMake manually.
 
 Extract the archive and run:
