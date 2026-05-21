@@ -9,6 +9,8 @@
 #include <QMenu>
 #include <QPainter>
 #include <QPixmap>
+#include <QRectF>
+#include <QtSvg/QSvgRenderer>
 #include <QSystemTrayIcon>
 
 namespace {
@@ -59,15 +61,26 @@ void ensureTrayIconFiles() {
     ensureIconFile(inactiveTrayIconPath(), defaultCircleSvg("#6666aa"));
 }
 
-QIcon loadIconOrFallback(const QString &path, const QIcon &fallback) {
+/** Rasterize SVG with Qt Svg (linked). Avoids reliance on Qt's svg imageformats plugin — required for bundled AppDirs. */
+QIcon iconFromSvgPath(const QString &path, const QIcon &fallback) {
     if (!QFileInfo::exists(path)) {
         return fallback;
     }
 
-    QIcon icon(path);
-    if (icon.isNull()) {
-        qWarning() << "Failed to load tray icon from file:" << path;
+    QSvgRenderer renderer(path);
+    if (!renderer.isValid()) {
+        qWarning() << "Invalid or unreadable tray SVG:" << path;
         return fallback;
+    }
+
+    QIcon icon;
+    for (const int size : {16, 22, 24, 32, 48, 64, 128, 256}) {
+        QPixmap pixmap(size, size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        renderer.render(&painter, QRectF(0.0, 0.0, static_cast<double>(size), static_cast<double>(size)));
+        icon.addPixmap(pixmap);
     }
     return icon;
 }
@@ -85,8 +98,8 @@ void TrayIconManager::loadIcons() {
 
     ensureTrayIconFiles();
 
-    activeIcon_ = loadIconOrFallback(activeTrayIconPath(), defaultActiveIcon);
-    inactiveIcon_ = loadIconOrFallback(inactiveTrayIconPath(), defaultInactiveIcon);
+    activeIcon_ = iconFromSvgPath(activeTrayIconPath(), defaultActiveIcon);
+    inactiveIcon_ = iconFromSvgPath(inactiveTrayIconPath(), defaultInactiveIcon);
 }
 
 TrayIconManager::~TrayIconManager() {
