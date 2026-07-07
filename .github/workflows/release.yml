@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    # ubuntu-22.04 (glibc 2.35): portable Qt .so blobs must not require GLIBC_2.38+ from ubuntu-latest.
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
