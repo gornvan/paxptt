@@ -98,26 +98,36 @@ int main(int argc, char *argv[]) {
     auto applyMute = [&]() {
         pulse.muteAllRecordingSources();
         sound.playMute();
-        QMetaObject::invokeMethod(&app, [&tray]() { tray.setIconState(false); }, Qt::QueuedConnection);
+        tray.setIconState(false);
     };
 
     auto onPress = [&](int) {
-        const bool wasDown = pttIsDown.exchange(true);
-        if (wasDown) {
-            return;
-        }
-        sound.playUnmute();
-        pulse.unmuteAllRecordingSources();
-        QMetaObject::invokeMethod(&app, [&tray]() { tray.setIconState(true); }, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(
+            &app,
+            [&]() {
+                const bool wasDown = pttIsDown.exchange(true);
+                if (wasDown) {
+                    return;
+                }
+                sound.playUnmute();
+                pulse.unmuteAllRecordingSources();
+                tray.setIconState(true);
+            },
+            Qt::QueuedConnection);
     };
 
     auto onRelease = [&](int) {
-        pttIsDown.store(false);
-        QTimer::singleShot(config.muteDelayMs, &app, [&]() {
-            if (!pttIsDown.load()) {
-                applyMute();
-            }
-        });
+        QMetaObject::invokeMethod(
+            &app,
+            [&]() {
+                pttIsDown.store(false);
+                QTimer::singleShot(config.muteDelayMs, &app, [&]() {
+                    if (!pttIsDown.load()) {
+                        applyMute();
+                    }
+                });
+            },
+            Qt::QueuedConnection);
     };
 
     sound.ensureSounds();
