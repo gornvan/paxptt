@@ -26,6 +26,8 @@ Environment:
   PAXP2T_RELEASE_TOOLS_DIR Cache for linuxdeploy AppImages (default: ~/.cache/paxp2t-release-tools)
   REGENERATE_PAXP2T_ICON=1 Replace packaging/paxp2t.png even if it exists
   PAXP2T_SKIP_BUNDLE_TRIM=1  Skip aggressive post-bundle trimming (translations, extras)
+  PAXP2T_SKIP_LDD_CHECK=1    Skip post-trim NEEDED audit (check-portable-ldd.sh)
+  PAXP2T_ARCHIVE_GZIP=-9 Pass-through to gzip for the release tarball (-z levels; default -9 if unset).
 
   -h, --help               Show this help
 EOF
@@ -127,6 +129,20 @@ trim_portable_bundle() {
     find "${root}" -type f \( -name '*.debug' -o -name '*.dwz' \) -delete || true
 
     rm -rf "${root}/usr/share/doc" "${root}/usr/share/man"
+
+    # SVG icon engine (not used — tray uses QtSvg). IBus/virtual-keyboard IME not used. GLX/EGL integrations optional.
+    rm -rf "${root}/usr/plugins/iconengines" "${root}/usr/plugins/xcbglintegrations"
+    shopt -s nullglob
+    rm -f "${root}/usr/plugins/platforminputcontexts"/libibus* \
+          "${root}/usr/plugins/platforminputcontexts"/libqtvirtualkeyboard*
+    shopt -u nullglob
+
+    # Drop orphaned .so blobs linuxdeploy duplicated (JPEG/AVIF/OpenSSL tails, KDE Frameworks, VirtualKeyboard libs…)
+    SCRIPTS_HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    bash "${SCRIPTS_HERE}/prune-appdir-libs.sh" "${root}"
+
+    find "${root}/usr/share/icons" -depth -type d -empty -delete 2>/dev/null || true
+    find "${root}" -depth -type d -empty -delete 2>/dev/null || true
 
     echo "Trimmed bundle size:"
     du -sh "${root}" 2>/dev/null || true
@@ -254,6 +270,11 @@ find "${REPO_ROOT}/${APPDIR_NAME}" -type f \( -name '*.so' -o -name '*.so.*' \) 
 
 trim_portable_bundle "${REPO_ROOT}/${APPDIR_NAME}"
 
+if [[ "${PAXP2T_SKIP_LDD_CHECK:-}" != "1" ]]; then
+    echo "Checking portable NEEDED dependencies (check-portable-ldd.sh)..."
+    bash "${SCRIPT_DIR}/check-portable-ldd.sh" --fail-orphans "${REPO_ROOT}/${APPDIR_NAME}"
+fi
+
 PORTABLE_TOP="paxp2t-${RELEASE_VERSION}-linux-x86_64-portable"
 ARCHIVE_BASENAME="paxp2t-${RELEASE_VERSION}-linux-x86_64-portable.tar.gz"
 ARCHIVE_PATH="${OUT_DIR}/${ARCHIVE_BASENAME}"
@@ -262,7 +283,8 @@ rm -rf "${REPO_ROOT:?}/${PORTABLE_TOP}"
 mv "${REPO_ROOT}/${APPDIR_NAME}" "${REPO_ROOT}/${PORTABLE_TOP}"
 
 mkdir -p "${OUT_DIR}"
-tar -czvf "${ARCHIVE_PATH}" -C "${REPO_ROOT}" "${PORTABLE_TOP}"
+# GNU tar honours GZIP flags for deflate; default mirrors gzip -9 (smaller tarball, same unpacked tree).
+GZIP="${PAXP2T_ARCHIVE_GZIP:--9}" tar -czvf "${ARCHIVE_PATH}" -C "${REPO_ROOT}" "${PORTABLE_TOP}"
 rm -rf "${REPO_ROOT:?}/${PORTABLE_TOP}"
 
 echo "Done:"

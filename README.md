@@ -88,14 +88,47 @@ After bundling and **`strip`**, the script **aggressively trims** leftovers linu
 - **`*.qm`** / translation dirs · **QML** · **sqldrivers** · **doc/man**
 - **Non-XCB platform plugins** (Wayland/offscreen leftovers; **`libqxcb.so` stays** only)
 - **`platformthemes`** and **Wayland** plugin dirs
-- **`plugins/tls`** (Qt OpenSSL backends) · **`plugins/multimedia`** · the whole **`plugins/imageformats`** tree (this app renders tray SVG via linked **Qt Svg**, not image plugins)
-- Fat **unused Qt libs** pulled in accidentally (Quick, QML, Vulkan, Charts, Multimedia, Qt Bluetooth/NFC/Serial/WebSockets, …) plus **`*.a`** and detached **`.debug`**
+- **`plugins/imageformats`** and **`plugins/iconengines`** (tray rasterizes SVG via linked **Qt Svg**)
+- **`plugins/tls`**, **`plugins/multimedia`**
+- **`platforminputcontexts`**: removes **IBus** and **Qt Virtual Keyboard** only (**Compose** context stays)
+- **`xcbglintegrations`** (EGL/GLX XCB backends not needed for tray + widgets here)
+- Obvious stray **Qt/KDE module** `.so` names (Quick, QML, Vulkan, Charts, Multimedia, NFC, …), **`*.a`**, **`*.debug`**, **`*.dwz`**
+- **`.github/scripts/prune-appdir-libs.sh`**: **`ldd` transitive closure** from **`usr/bin/paxp2t`** + every **`usr/plugins/**/*.so`**, then delete anything in **`usr/lib/`** not in that closure (large savings: codec stacks, **KF6Archive**, OpenSSL tails, **VirtualKeyboard**, … when not actually linked)
+- Empty icon dirs under **`usr/share/icons`**, then **every remaining empty directory** under the trimmed AppDir (drops hollow **`pixmaps/`** stubs, etc.)
+- **`.github/scripts/check-portable-ldd.sh --fail-orphans`** (after trim, before tarball): fails the build on unresolved SONAMEs or orphan **`usr/lib`** blobs — also runs automatically in the **Release** workflow via **`build-portable-bundle.sh`**
 
-It logs **`du -sh`** before and after. Set **`PAXP2T_SKIP_BUNDLE_TRIM=1`** for a fuller tree while debugging.
+It logs **`du -sh`** before and after. Set **`PAXP2T_SKIP_BUNDLE_TRIM=1`** to skip this whole pass.
 
 What’s left is mostly **Qt Gui/Widgets/Core + Svg**, **XCB + X11-ish deps**, and **`libqxcb.so`**’s own dependencies.
 
-The script configures **`PAXP2T_RELEASE_MINIMAL=ON`** for smaller Release binaries (**`-Os`**, section **`--gc-sections`**, **`--as-needed`**), strips the executable and bundled **`*.so`**, then archives the portable directory. For an ordinary Release build without linuxdeploy you can apply the same flag when running CMake manually.
+The script configures **`PAXP2T_RELEASE_MINIMAL=ON`** for smaller Release binaries (**`-Os`**, section **`--gc-sections`**, **`--as-needed`**, **[LTO](https://cmake.org/cmake/help/latest/module/CheckIPOSupported.html)** when the toolchain supports it), **`strip`** on the exe and bundled **`*.so`**, then **`tar.gz`** with **`GZIP=-9`** (**`PAXP2T_ARCHIVE_GZIP`** overrides) so the downloaded archive is tighter without changing what extractors receive. For an ordinary Release build without linuxdeploy you can apply the same flag when running CMake manually.
+
+#### When the tree stops shrinking (~tens of MB uncompressed)
+
+Portable builds use distro Qt (**`ubuntu-latest`** packages), which on Ubuntu pulls **full ICU** as **`Qt6Core`’s transitive dependency**. **`libicudata.so`** (Unicode / locale payload) commonly dominates **`usr/lib/`** sizes; it is kept because **Qt**, not trimming heuristics, actually links it — `ldd`-closure pruning is already doing honest work here. Shrinking ICU further means distributing a Qt built with **minimal or no ICU**, which is outside this repo’s APT-based workflow (**Flatpak**/custom Qt / different distro runtimes).
+
+**`libQt6DBus`**, **`libdbus`**, **`glib`**, **`systemd`**: likewise normal fallout of Linux **Qt Gui** desktop integration (`QGuiApplication` pulls this stack on typical builds). Removing it would risk broken session/notifications/integration rather than reclaiming predictable space.
+
+Inspect what’s bulky with:
+
+```bash
+du -h --max-depth=1 paxp2t-*-portable/usr/lib | sort -h
+```
+
+Audit **NEEDED** dependencies (same seeds as the pruner: exe + every plugin `.so`). **`ldd` does not see `dlopen()`** — only link-time **`DT_NEEDED`** edges and whatever you explicitly **`ldd`** on (hence seeding plugins):
+
+```bash
+.github/scripts/check-portable-ldd.sh paxp2t-*-portable          # hybrid: allow glibc/X11/Mesa/fonts on host
+.github/scripts/check-portable-ldd.sh --strict paxp2t-*-portable # everything else must be under the AppDir
+```
+
+For **runtime-only** loads (Qt picking a plugin after a menu click, GL drivers, NSS), exercise the app and capture the loader log:
+
+```bash
+APPD="$(readlink -f paxp2t-*-portable)"
+LD_DEBUG=libs LD_LIBRARY_PATH="$APPD/usr/lib" "$APPD/usr/bin/paxp2t" 2>&1 | tee /tmp/paxp2t-ld.log
+grep -E 'calling init:|file=' /tmp/paxp2t-ld.log
+```
 
 Extract the archive and run:
 
