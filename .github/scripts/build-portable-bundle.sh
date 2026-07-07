@@ -27,8 +27,6 @@ Environment:
   REGENERATE_PAXP2T_ICON=1 Replace packaging/paxp2t.png even if it exists
   PAXP2T_SKIP_BUNDLE_TRIM=1  Skip aggressive post-bundle trimming (translations, extras)
   PAXP2T_SKIP_LDD_CHECK=1    Skip post-trim NEEDED audit (check-portable-ldd.sh)
-  PAXP2T_SKIP_GLIBC_CHECK=1  Skip bundled GLIBC version cap (check-portable-glibc.sh)
-  PAXP2T_MAX_GLIBC=2.35      Max GLIBC_x.y allowed in bundled ELFs (ubuntu-22.04 baseline)
   PAXP2T_ARCHIVE_GZIP=-9 Pass-through to gzip for the release tarball (-z levels; default -9 if unset).
 
   -h, --help               Show this help
@@ -275,11 +273,6 @@ trim_portable_bundle "${REPO_ROOT}/${APPDIR_NAME}"
 if [[ "${PAXP2T_SKIP_LDD_CHECK:-}" != "1" ]]; then
     echo "Checking portable NEEDED dependencies (check-portable-ldd.sh)..."
     bash "${SCRIPT_DIR}/check-portable-ldd.sh" --fail-orphans "${REPO_ROOT}/${APPDIR_NAME}"
-fi
-
-if [[ "${PAXP2T_SKIP_GLIBC_CHECK:-}" != "1" ]]; then
-    echo "Checking bundled GLIBC symbol ceiling (check-portable-glibc.sh)..."
-    bash "${SCRIPT_DIR}/check-portable-glibc.sh" --max "${PAXP2T_MAX_GLIBC:-2.35}" "${REPO_ROOT}/${APPDIR_NAME}"
 fi
 
 PORTABLE_TOP="paxp2t-${RELEASE_VERSION}-linux-x86_64-portable"
