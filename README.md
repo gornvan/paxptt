@@ -46,23 +46,58 @@ Changing color is easy - just edit the .svg icons with a text editor and replace
 
 ## Build
 
-You need Qt6 development libraries including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not the optional image-format plugin):
+### Toolchain
 
-- Debian/Ubuntu: `qt6-base-dev`, `qt6-svg-dev`, `libx11-dev`, `libxtst-dev`
-- openSUSE: **`qt6-svg-devel`** installs `Qt6SvgConfig.cmake`; **`libQt6Svg6`** is runtime-only and will **not** satisfy CMake. Add base Qt build deps as for any Qt app (e.g. `qt6-core-private-devel` grouping varies — `zypper search -s qt6 svg` / `zypper wp /usr/lib64/cmake/Qt6Svg/Qt6SvgConfig.cmake`).
+- **CMake** ≥ 3.20 (`cmake`)
+- **C++17 compiler** — GCC or Clang with standard library (Debian/Ubuntu: `build-essential`; openSUSE: `patterns-devel-cpp` or `gcc-c++` + `cmake`)
+
+### Libraries (development packages)
+
+Qt6 including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not the optional image-format plugin), plus X11 headers/libs:
+
+| Role | Debian / Ubuntu | openSUSE |
+|------|-----------------|----------|
+| Qt6 Core, Gui, Widgets | `qt6-base-dev` | Qt6 devel metapackage / `qt6-core-devel` etc. (same as any Qt6 app) |
+| Qt6 Svg | `qt6-svg-dev` | **`qt6-svg-devel`** (`libQt6Svg6` alone is runtime-only and will **not** satisfy CMake — `zypper wp …/Qt6SvgConfig.cmake`) |
+| X11 | `libx11-dev` | `libX11-devel` |
+| XTest (global input) | `libxtst-dev` | `libXtst-devel` |
+
+**Example (Debian/Ubuntu):**
 
 ```bash
-# Configure the project: source dir is 'cpp', build dir is 'build-cpp'
+sudo apt-get install -y --no-install-recommends \
+  build-essential cmake \
+  qt6-base-dev qt6-svg-dev libx11-dev libxtst-dev
+```
+
+### Compile
+
+```bash
+# Configure: source dir is 'cpp', build dir is 'build-cpp'
 cmake -S cpp -B build-cpp
-# Build the project in 'build-cpp'; '-j' speeds up build using all CPU cores
+# Build; '-j' uses all CPU cores
 cmake --build build-cpp -j
 ```
 
-### Run:
+### Run
 
 ```bash
 ./build-cpp/paxp2t
 ```
+
+### Optional: portable AppDir tarball
+
+Same repo script as [Releases (portable Linux)](#releases-portable-linux) — [`.github/scripts/build-portable-bundle.sh`](.github/scripts/build-portable-bundle.sh). Extra tools on top of the table above:
+
+| Tool | Debian / Ubuntu | Notes |
+|------|-----------------|-------|
+| `curl` | `curl` | fetch linuxdeploy AppImages |
+| `strip` | `binutils` | shrink bundled `.so` / executable |
+| `file` | `file` | ELF checks in bundle scripts |
+| `convert` | `imagemagick` | only if `packaging/paxp2t.png` is missing |
+| `bash` | (preinstalled) | trim / audit scripts |
+
+linuxdeploy binaries are downloaded automatically on first run (cached under `~/.cache/paxp2t-release-tools`).
 
 ## Releases (portable Linux)
 
@@ -105,7 +140,7 @@ The script configures **`PAXP2T_RELEASE_MINIMAL=ON`** for smaller Release binari
 
 #### When the tree stops shrinking (~tens of MB uncompressed)
 
-Portable builds use distro Qt (**`ubuntu-latest`** packages), which on Ubuntu pulls **full ICU** as **`Qt6Core`’s transitive dependency**. **`libicudata.so`** (Unicode / locale payload) commonly dominates **`usr/lib/`** sizes; it is kept because **Qt**, not trimming heuristics, actually links it — `ldd`-closure pruning is already doing honest work here. Shrinking ICU further means distributing a Qt built with **minimal or no ICU**, which is outside this repo’s APT-based workflow (**Flatpak**/custom Qt / different distro runtimes).
+Portable builds use distro Qt (Release CI on **Ubuntu 22.04**), which on Ubuntu pulls **full ICU** as **`Qt6Core`’s transitive dependency**. **`libicudata.so`** (Unicode / locale payload) commonly dominates **`usr/lib/`** sizes; it is kept because **Qt**, not trimming heuristics, actually links it — `ldd`-closure pruning is already doing honest work here. Shrinking ICU further means distributing a Qt built with **minimal or no ICU**, which is outside this repo’s APT-based workflow (**Flatpak**/custom Qt / different distro runtimes).
 
 **`libQt6DBus`**, **`libdbus`**, **`glib`**, **`systemd`**: likewise normal fallout of Linux **Qt Gui** desktop integration (`QGuiApplication` pulls this stack on typical builds). Removing it would risk broken session/notifications/integration rather than reclaiming predictable space.
 
@@ -143,6 +178,45 @@ You still need a normal desktop stack on the host (X11, PulseAudio or PipeWire-P
 ### Flatpak later
 
 Flatpak does **not** usually mean “one binary with Qt embedded.” It means the app is packaged against a **runtime** (for example a KDE/Qt runtime) declared in a manifest, plus your files. Bundling with linuxdeploy is still useful as a stepping stone or for non-Flatpak distribution; a Flatpak manifest would declare dependencies differently.
+
+## Troubleshooting
+
+### `GLIBC_2.xx not found` when running the portable tarball
+
+Example:
+
+```text
+./AppRun: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38' not found
+  (required by .../usr/lib/libQt6Gui.so.6)
+```
+
+The portable bundle **does not ship `libc.so.6`** — the dynamic linker always uses the host’s glibc. The bundled **Qt** libraries were built on a **newer** machine (e.g. GitHub Actions on a recent Ubuntu) and expect a **newer** glibc than your system provides. \
+See **Build** section for build dependencies.
+
+**Fix:** rebuild on **your** machine so linuxdeploy copies Qt/libs linked against **your** glibc. From a checkout of this repo:
+
+```bash
+# Install build deps from the **Build** section (qt6-base-dev, qt6-svg-dev, libx11-dev, libxtst-dev, …)
+.github/scripts/build-portable-bundle.sh
+tar xf dist/paxp2t-*-linux-x86_64-portable.tar.gz
+cd paxp2t-*-linux-x86_64-portable
+./AppRun
+```
+
+Alternatively, build and run without linuxdeploy (same deps as **Build**):
+
+```bash
+cmake -S cpp -B build-cpp
+cmake --build build-cpp -j
+./build-cpp/paxp2t
+```
+
+Check your host glibc with `ldd --version | head -1`. After a local portable rebuild, optional sanity checks:
+
+```bash
+./.github/scripts/check-portable-glibc.sh paxp2t-*-portable
+./.github/scripts/check-portable-ldd.sh paxp2t-*-portable
+```
 
 ## Notes
 
