@@ -5,7 +5,7 @@ by either a mouse or a keyboard button.
 
 ## Features
 
-- X11 global mouse/keyboard bindings via XRecord
+- X11 global mouse/keyboard bindings via XRecord (multiple PTT keys and mouse buttons configurable)
 - PulseAudio total source mute/unmute via `pactl`
 - Sound indication of unmute/mute actions via `paplay`
   - sounds stored as `.wav` under `~/.local/paxp2t/sounds/`, easy to replace
@@ -17,25 +17,65 @@ by either a mouse or a keyboard button.
   - `~/.local/paxp2t/config.yml`
 
 ## Configurability
-### Binds
-By default, the bound buttons are:
-- mouse button `9` (FORWARD)
-- X11 keysym `Caps_Lock`
 
-Set `BIND_MOUSE_BUTTON` to `0` to unbind mouse PTT.
-Set `BIND_KEYBOARD_KEYSYM` to `None` to unbind keyboard PTT.
+### Binds (push-to-talk buttons and keys)
 
-Keyboard binding uses **X11 keysyms** (names like `Caps_Lock`, `F24`, `Pause`).
+Defaults on first run (`~/.local/paxp2t/config.yml`):
 
-To discover the keysym for a key, run this in a terminal; each keypress prints the keysym name:
+```yaml
+BIND_KEYBOARD_KEYSYM: [Caps_Lock]
+BIND_MOUSE_BUTTON: [9]
+```
+
+Both settings accept either a **single value** (legacy) or a **YAML inline list** — any listed control acts as push-to-talk (press = unmute, release = mute after delay).
+
+**Mouse** — X11 button numbers (`1` = left, `2` = middle, `3` = right, `9` = forward on many mice):
+
+```yaml
+# One thumb button
+BIND_MOUSE_BUTTON: [9]
+
+# Two thumb buttons
+BIND_MOUSE_BUTTON: [9, 8]
+
+# No mouse bind
+BIND_MOUSE_BUTTON: []
+```
+
+**Keyboard** — [X11 keysym](https://cgit.freedesktop.org/xorg/proto/xproto/tree/keysymdef.h) names (`Caps_Lock`, `F24`, `Pause`, …):
+
+```yaml
+# One key
+BIND_KEYBOARD_KEYSYM: [Caps_Lock]
+
+# PTT on either of two keys
+BIND_KEYBOARD_KEYSYM: [Caps_Lock, Scroll_Lock]
+
+# No keyboard bind
+BIND_KEYBOARD_KEYSYM: []
+```
+
+The plural key names `BIND_MOUSE_BUTTONS` / `BIND_KEYBOARD_KEYSYMS` are accepted as aliases when reading; the file is rewritten with the singular names above.
+
+**Finding keysym names** — run in a terminal; each keypress prints a name:
+
 ```bash
 # xev might need to be installed
 xev -event keyboard | grep --line-buffered keycode | sed -E 's/.*, ([^,^\)]*)\).*/\1/'
 ```
-Then set `BIND_KEYBOARD_KEYSYM: <name>` in `~/.local/paxp2t/config.yml` \
-(for example `BIND_KEYBOARD_KEYSYM: Caps_Lock`).
+
+**Finding mouse button numbers** — run the following command in a terminal to monitor mouse button presses:
+
+```bash
+xev -event button | grep -A2 --line-buffered ButtonPress
+```
+
+Then press the desired button and look for lines like `ButtonPress event, serial ..., button N, ...`, where `N` is the X11 button number to use.
+
+Restart paxp2t after editing the config.
 
 ### Icons
+
 After first run, You can replace the icons under `~/.local/paxp2t/icons/` with any svg You like.
 Changing color is easy - just edit the .svg icons with a text editor and replace the color code of `fill` value in the `circle` tag.
 

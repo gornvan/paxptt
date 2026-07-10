@@ -1,11 +1,12 @@
 #pragma once
 
+#include <QList>
 #include <QString>
 #include <QVariantMap>
 
 struct AppConfig {
-    QString bindKeyboardKeysym = "Caps_Lock";
-    int bindMouseButton = 9;
+    QList<QString> bindKeyboardKeysyms = {QStringLiteral("Caps_Lock")};
+    QList<int> bindMouseButtons = {9};
     bool cacheInputs = true;
     int muteDelayMs = 0;
     bool showTrayIcon = true;

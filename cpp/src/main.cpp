@@ -4,6 +4,7 @@
 #include <QProcess>
 #include <QTimer>
 #include <atomic>
+#include <functional>
 #include <X11/Xlib.h>
 
 #include "config_manager.hpp"
@@ -65,6 +66,27 @@ int resolveKeycodeFromKeysym(const QString &keysymName) {
     }
 
     return static_cast<int>(keycode);
+}
+
+using PttCallback = std::function<void(int)>;
+
+void bindMouseButtons(MouseBinder &binder, const QList<int> &buttons, const PttCallback &onPress,
+                      const PttCallback &onRelease) {
+    for (int button : buttons) {
+        if (button > 0) {
+            binder.bind(button, onPress, onRelease);
+        }
+    }
+}
+
+void bindKeyboardKeysyms(KeyboardBinder &binder, const QList<QString> &keysyms, const PttCallback &onPress,
+                         const PttCallback &onRelease) {
+    for (const QString &keysym : keysyms) {
+        const int keycode = resolveKeycodeFromKeysym(keysym);
+        if (keycode > 0) {
+            binder.bind(keycode, onPress, onRelease);
+        }
+    }
 }
 
 } // namespace
@@ -139,13 +161,8 @@ int main(int argc, char *argv[]) {
             [&]() { QMetaObject::invokeMethod(&app, "quit", Qt::QueuedConnection); });
     }
 
-    if (config.bindMouseButton > 0) {
-        mouseBinder.bind(config.bindMouseButton, onPress, onRelease);
-    }
-    const int keyboardKeycode = resolveKeycodeFromKeysym(config.bindKeyboardKeysym);
-    if (keyboardKeycode > 0) {
-        keyboardBinder.bind(keyboardKeycode, onPress, onRelease);
-    }
+    bindMouseButtons(mouseBinder, config.bindMouseButtons, onPress, onRelease);
+    bindKeyboardKeysyms(keyboardBinder, config.bindKeyboardKeysyms, onPress, onRelease);
 
     const int exitCode = app.exec();
 

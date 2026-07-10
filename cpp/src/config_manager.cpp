@@ -7,15 +7,113 @@
 
 namespace {
 
-    QString trim(const QString &value) {
-        return value.trimmed();
-    }
-
-    QString toYamlBool(bool value) {
-        return value ? "true" : "false";
-    }
-
+QString trim(const QString &value) {
+    return value.trimmed();
 }
+
+QString unquote(QString value) {
+    value = trim(value);
+    if (value.size() >= 2 &&
+        ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith('\'') && value.endsWith('\'')))) {
+        return value.mid(1, value.size() - 2);
+    }
+    return value;
+}
+
+QStringList splitListItems(QString inner) {
+    inner = trim(inner);
+    if (inner.isEmpty()) {
+        return {};
+    }
+    QStringList out;
+    for (QString part : inner.split(',', Qt::SkipEmptyParts)) {
+        part = unquote(trim(part));
+        if (!part.isEmpty()) {
+            out.append(part);
+        }
+    }
+    return out;
+}
+
+QStringList parseStringListValue(const QString &raw) {
+    QString value = trim(raw);
+    if (value.startsWith('[') && value.endsWith(']')) {
+        return splitListItems(value.mid(1, value.size() - 2));
+    }
+    if (value.isEmpty()) {
+        return {};
+    }
+    return {unquote(value)};
+}
+
+QList<int> parseIntListValue(const QString &raw, bool *ok) {
+    *ok = true;
+    QList<int> out;
+    const QStringList items = parseStringListValue(raw);
+    if (items.isEmpty()) {
+        return out;
+    }
+    if (items.size() == 1 && !raw.trimmed().startsWith('[')) {
+        bool itemOk = false;
+        const int single = items.first().toInt(&itemOk);
+        if (itemOk) {
+            out.append(single);
+            return out;
+        }
+        *ok = false;
+        return {};
+    }
+    for (const QString &item : items) {
+        bool itemOk = false;
+        const int parsed = item.toInt(&itemOk);
+        if (!itemOk) {
+            *ok = false;
+            return {};
+        }
+        out.append(parsed);
+    }
+    return out;
+}
+
+QString formatYamlStringList(const QList<QString> &items) {
+    if (items.isEmpty()) {
+        return QStringLiteral("[]");
+    }
+    QStringList parts;
+    for (const QString &item : items) {
+        parts.append(item);
+    }
+    return QStringLiteral("[") + parts.join(QStringLiteral(", ")) + QStringLiteral("]");
+}
+
+QString formatYamlIntList(const QList<int> &items) {
+    if (items.isEmpty()) {
+        return QStringLiteral("[]");
+    }
+    QStringList parts;
+    for (int item : items) {
+        parts.append(QString::number(item));
+    }
+    return QStringLiteral("[") + parts.join(QStringLiteral(", ")) + QStringLiteral("]");
+}
+
+QString toYamlBool(bool value) {
+    return value ? "true" : "false";
+}
+
+QList<QString> normalizedKeyboardKeysyms(const QList<QString> &raw) {
+    QList<QString> out;
+    for (QString keysym : raw) {
+        keysym = trim(keysym);
+        if (keysym.isEmpty() || keysym.compare(QStringLiteral("none"), Qt::CaseInsensitive) == 0) {
+            continue;
+        }
+        out.append(keysym);
+    }
+    return out;
+}
+
+} // namespace
 
 QString ConfigManager::configDirPath() {
     return QDir::homePath() + "/.local/paxp2t";
@@ -56,28 +154,20 @@ AppConfig ConfigManager::readConfig() {
         }
 
         const QString key = trim(line.left(colon));
-        QString value = trim(line.mid(colon + 1));
-        if (value.startsWith('"') && value.endsWith('"') && value.size() >= 2) {
-            value = value.mid(1, value.size() - 2);
-        } else if (value.startsWith('\'') && value.endsWith('\'') && value.size() >= 2) {
-            value = value.mid(1, value.size() - 2);
-        }
+        const QString value = trim(line.mid(colon + 1));
 
-        if (key == "BIND_MOUSE_BUTTON") {
-            int out = defaults.bindMouseButton;
-            if (parseInt(value, out)) {
-                parsed.bindMouseButton = out;
+        if (key == "BIND_MOUSE_BUTTON" || key == "BIND_MOUSE_BUTTONS") {
+            bool ok = false;
+            const QList<int> out = parseIntListValue(value, &ok);
+            if (ok) {
+                parsed.bindMouseButtons = out;
             } else {
                 needsRewrite = true;
             }
             continue;
         }
-        if (key == "BIND_KEYBOARD_KEYSYM") {
-            if (!value.trimmed().isEmpty()) {
-                parsed.bindKeyboardKeysym = value.trimmed();
-            } else {
-                needsRewrite = true;
-            }
+        if (key == "BIND_KEYBOARD_KEYSYM" || key == "BIND_KEYBOARD_KEYSYMS") {
+            parsed.bindKeyboardKeysyms = normalizedKeyboardKeysyms(parseStringListValue(value));
             continue;
         }
         if (key == "SHOW_TRAY_ICON") {
@@ -111,15 +201,6 @@ AppConfig ConfigManager::readConfig() {
         extras.insert(key, value);
     }
 
-    const bool missingKnown =
-        !extras.contains("BIND_MOUSE_BUTTON") &&
-        !extras.contains("BIND_KEYBOARD_KEYSYM") &&
-        !extras.contains("SHOW_TRAY_ICON") &&
-        !extras.contains("MUTE_DELAY_MS");
-
-    Q_UNUSED(missingKnown);
-
-    // Rewrite if the file had invalid lines/values or is missing expected keys.
     if (needsRewrite) {
         writeConfig(parsed, extras);
         return parsed;
@@ -176,14 +257,18 @@ bool ConfigManager::writeConfig(const AppConfig &config, const QVariantMap &extr
     }
 
     QTextStream out(&file);
-    out << "BIND_KEYBOARD_KEYSYM: " << config.bindKeyboardKeysym << "\n";
-    out << "BIND_MOUSE_BUTTON: " << config.bindMouseButton << "\n";
+    out << "BIND_KEYBOARD_KEYSYM: " << formatYamlStringList(config.bindKeyboardKeysyms) << "\n";
+    out << "BIND_MOUSE_BUTTON: " << formatYamlIntList(config.bindMouseButtons) << "\n";
     out << "CACHE_INPUTS: " << toYamlBool(config.cacheInputs) << "\n";
     out << "MUTE_DELAY_MS: " << qMax(0, config.muteDelayMs) << "\n";
     out << "SHOW_TRAY_ICON: " << toYamlBool(config.showTrayIcon) << "\n";
 
     for (auto it = extraKeys.constBegin(); it != extraKeys.constEnd(); ++it) {
-        out << it.key() << ": " << it.value().toString() << "\n";
+        const QString k = it.key();
+        if (k == "BIND_MOUSE_BUTTONS" || k == "BIND_KEYBOARD_KEYSYMS") {
+            continue;
+        }
+        out << k << ": " << it.value().toString() << "\n";
     }
     return true;
 }
