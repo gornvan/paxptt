@@ -24,6 +24,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg)
 find_package(X11 REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PULSE REQUIRED IMPORTED_TARGET libpulse-simple)
 
 file(GLOB CPP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
@@ -42,6 +44,7 @@ target_link_libraries(paxp2t PRIVATE
     Qt6::Svg
     X11::X11
     Xtst
+    PkgConfig::PULSE
 )
 
 if(PAXP2T_RELEASE_MINIMAL AND PAXP2T_HAVE_RELEASE_IPO)

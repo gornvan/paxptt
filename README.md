@@ -7,8 +7,8 @@ by either a mouse or a keyboard button.
 
 - X11 global mouse/keyboard bindings via XRecord (multiple PTT keys and mouse buttons configurable)
 - PulseAudio total source mute/unmute via `pactl`
-- Sound indication of unmute/mute actions via `paplay`
-  - sounds stored as `.wav` under `~/.local/paxp2t/sounds/`, easy to replace
+- Sound indication of unmute/mute actions via in-process PulseAudio playback (libpulse)
+  - sounds stored as `.wav` under `~/.local/paxp2t/sounds/`, easy to replace (PCM16 mono/stereo; restart after changing)
 - Tray icon via `QSystemTrayIcon` with:
   - a tray icon, toggling its color
   - `Open config`
@@ -101,13 +101,14 @@ Qt6 including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not t
 | Qt6 Svg | `qt6-svg-dev` | **`qt6-svg-devel`** (`libQt6Svg6` alone is runtime-only and will **not** satisfy CMake — `zypper wp …/Qt6SvgConfig.cmake`) |
 | X11 | `libx11-dev` | `libX11-devel` |
 | XTest (global input) | `libxtst-dev` | `libXtst-devel` |
+| PulseAudio (indicator sounds) | `libpulse-dev` | `libpulse-devel` |
 
 **Example (Debian/Ubuntu):**
 
 ```bash
 sudo apt-get install -y --no-install-recommends \
   build-essential cmake \
-  qt6-base-dev qt6-svg-dev libx11-dev libxtst-dev
+  qt6-base-dev qt6-svg-dev libx11-dev libxtst-dev libpulse-dev
 ```
 
 ### Compile
@@ -261,4 +262,4 @@ Check your host glibc with `ldd --version | head -1`. After a local portable reb
 ## Notes
 
 - Won't work on Wayland-based systems or any other system with no X11-served displays.
-- On desktops without tray host support, the app keeps working without tray. If pulseaudio is available, the soudnd indication will still work.
+- On desktops without tray host support, the app keeps working without tray. If PulseAudio is available, the sound indication will still work.

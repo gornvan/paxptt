@@ -131,8 +131,8 @@ int main(int argc, char *argv[]) {
                 if (wasDown) {
                     return;
                 }
-                sound.playUnmute();
                 pulse.unmuteAllRecordingSources();
+                sound.playUnmute();
                 tray.setIconState(true);
             },
             Qt::QueuedConnection);
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
             Qt::QueuedConnection);
     };
 
-    sound.ensureSounds();
+    sound.ensureAndLoadSounds();
     applyMute();
 
     if (config.showTrayIcon) {
