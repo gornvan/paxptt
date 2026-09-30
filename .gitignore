@@ -7,3 +7,5 @@ dist/
 
 # CI/local may generate PNGs here; keep .desktop tracked
 packaging/*.png
+
+cpp/build/
