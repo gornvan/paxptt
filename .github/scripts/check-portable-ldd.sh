@@ -26,7 +26,8 @@ Usage:
   check-portable-ldd.sh [--strict|--hybrid] [--fail-orphans] [--verbose] <AppDir-root>
 
 Modes:
-  hybrid (default)  Allow typical host baseline: glibc, libstdc++, X11 core, PulseAudio, Mesa GL, fonts.
+  hybrid (default)  Allow typical host baseline: glibc, libstdc++, X11 core, PulseAudio (+ common codec
+                    libs if not duplicated in the AppDir), Mesa GL, fonts.
   strict            Every resolved .so must live under the AppDir (except ld-linux / vdso).
 
 Environment:
@@ -98,12 +99,14 @@ _hybrid_allows_host() {
     local soname="$1"
     case "$soname" in
         ld-linux* | linux-vdso*) return 0 ;;
-        libc.so.6 | libm.so.6 | libpthread.so.0 | libdl.so.2 | librt.so.1 | libresolv.so.2) return 0 ;;
+        libc.so.6 | libm.so.6 | libmvec.so.1 | libpthread.so.0 | libdl.so.2 | librt.so.1 | libresolv.so.2) return 0 ;;
         libstdc++.so.6 | libgcc_s.so.1) return 0 ;;
         libX11.so.6 | libXext.so.6 | libXau.so.6 | libxcb.so.1 | libX11-xcb.so.1) return 0 ;;
         libICE.so.6 | libSM.so.6) return 0 ;;
         libpulse.so.0 | libpulse-simple.so.0) return 0 ;;
         libpulsecommon-*.so*) return 0 ;;
+        libogg.so.0 | libvorbis.so.0 | libvorbisenc.so.2) return 0 ;;
+        libFLAC.so.* | libmpg123.so.* | libopus.so.* | libspeexdsp.so.*) return 0 ;;
         libEGL.so.1 | libGLX.so.0 | libOpenGL.so.0 | libGLdispatch.so.0) return 0 ;;
         libfontconfig.so.1 | libfreetype.so.6 | libharfbuzz.so.0 | libgraphite2.so.3 | libexpat.so.1) return 0 ;;
         libz.so.1 | libbz2.so.1 | libbrotlicommon.so.1 | libbrotlidec.so.1) return 0 ;;
