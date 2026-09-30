@@ -4,12 +4,12 @@
 #include <QProcess>
 #include <QTimer>
 #include <atomic>
-#include <functional>
+#include <memory>
+
 #include <X11/Xlib.h>
 
 #include "config_manager.hpp"
-#include "keyboard_binder.hpp"
-#include "mouse_binder.hpp"
+#include "ptt_input_backend.hpp"
 #include "pulseaudio_controller.hpp"
 #include "sound_controller.hpp"
 #include "tray_icon_manager.hpp"
@@ -39,81 +39,17 @@ void openConfigFile(const QString &path) {
     qCritical() << "You can manually open the config file at " << path;
 }
 
-int resolveKeycodeFromKeysym(const QString &keysymName) {
-    const QString trimmed = keysymName.trimmed();
-    if (trimmed.isEmpty() || trimmed.compare("none", Qt::CaseInsensitive) == 0) {
-        return 0;
-    }
-
-    const QByteArray keysymUtf8 = trimmed.toUtf8();
-    const KeySym keysym = XStringToKeysym(keysymUtf8.constData());
-    if (keysym == NoSymbol) {
-        qWarning() << "Invalid X11 keysym in config:" << keysymName;
-        return -1;
-    }
-
-    Display *display = XOpenDisplay(nullptr);
-    if (!display) {
-        qWarning() << "Unable to open X display while resolving keysym:" << keysymName;
-        return -1;
-    }
-
-    const KeyCode keycode = XKeysymToKeycode(display, keysym);
-    XCloseDisplay(display);
-    if (keycode == 0) {
-        qWarning() << "X11 keysym is not mapped to any keycode on this layout:" << keysymName;
-        return -1;
-    }
-
-    return static_cast<int>(keycode);
-}
-
-using PttCallback = std::function<void(int)>;
-
-void bindMouseButtons(MouseBinder &binder, const QList<int> &buttons, const PttCallback &onPress,
-                      const PttCallback &onRelease) {
-    for (int button : buttons) {
-        if (button > 0) {
-            binder.bind(button, onPress, onRelease);
-        }
-    }
-}
-
-void bindKeyboardKeysyms(KeyboardBinder &binder, const QList<QString> &keysyms, const PttCallback &onPress,
-                         const PttCallback &onRelease) {
-    for (const QString &keysym : keysyms) {
-        const int keycode = resolveKeycodeFromKeysym(keysym);
-        if (keycode > 0) {
-            binder.bind(keycode, onPress, onRelease);
-        }
-    }
-}
-
 } // namespace
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     app.setApplicationName("paxp2t");
 
-    const QString sessionType = qEnvironmentVariable("XDG_SESSION_TYPE").toLower();
-    if (sessionType != "x11") {
-        qCritical() << "paxp2t supports X11 sessions only.";
-        return 1;
-    }
-    if (qEnvironmentVariable("DISPLAY").isEmpty()) {
-        qCritical() << "DISPLAY is not set. Unable to connect to X11.";
-        return 1;
-    }
-
-    XInitThreads();
-
     const AppConfig config = ConfigManager::readConfig();
 
     PulseAudioController pulse(config.cacheInputs);
     SoundController sound;
     TrayIconManager tray;
-    MouseBinder mouseBinder;
-    KeyboardBinder keyboardBinder;
 
     std::atomic<bool> pttIsDown{false};
 
@@ -131,8 +67,8 @@ int main(int argc, char *argv[]) {
                 if (wasDown) {
                     return;
                 }
-                pulse.unmuteAllRecordingSources();
                 sound.playUnmute();
+                pulse.unmuteAllRecordingSources();
                 tray.setIconState(true);
             },
             Qt::QueuedConnection);
@@ -161,13 +97,23 @@ int main(int argc, char *argv[]) {
             [&]() { QMetaObject::invokeMethod(&app, "quit", Qt::QueuedConnection); });
     }
 
-    bindMouseButtons(mouseBinder, config.bindMouseButtons, onPress, onRelease);
-    bindKeyboardKeysyms(keyboardBinder, config.bindKeyboardKeysyms, onPress, onRelease);
+    if (!qEnvironmentVariable("DISPLAY").isEmpty()) {
+        XInitThreads();
+    }
+
+    std::unique_ptr<PttInputBackend> input = createPttInputBackend(config, onPress, onRelease);
+    if (!input) {
+        qCritical() << "No PTT input backend available.";
+        qCritical() << "Prefer evdev: add your user to the 'input' group and set BIND_PTT in"
+                    << ConfigManager::configPath();
+        qCritical() << "On X11, XRecord fallback also requires DISPLAY and the XRecord extension.";
+        return 1;
+    }
+    qInfo() << "PTT input:" << input->backendName();
 
     const int exitCode = app.exec();
 
-    mouseBinder.stop();
-    keyboardBinder.stop();
+    input->stop();
     tray.hideIcon();
     pulse.unmuteAllRecordingSources();
     return exitCode;

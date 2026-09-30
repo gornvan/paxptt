@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    # Match README portable baseline (glibc 2.35); ubuntu-latest bundles newer Qt/glibc.
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -19,6 +20,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
+            build-essential \
             cmake \
             qt6-base-dev \
             qt6-svg-dev \
@@ -26,7 +28,8 @@ jobs:
             libxtst-dev \
             libpulse-dev \
             imagemagick \
-            file
+            file \
+            binutils
 
       - name: Build portable bundle
         env:

@@ -35,7 +35,10 @@ add_executable(paxp2t
     ${CPP_SOURCES}
 )
 
-target_include_directories(paxp2t PRIVATE include)
+target_include_directories(paxp2t PRIVATE
+    include
+    "${CMAKE_CURRENT_SOURCE_DIR}/../.github/scripts/vendor"
+)
 
 target_link_libraries(paxp2t PRIVATE
     Qt6::Core

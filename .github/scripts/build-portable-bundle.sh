@@ -6,8 +6,9 @@
 #   .github/scripts/build-portable-bundle.sh [RELEASE_VERSION]
 #
 # Dependencies (install yourself on non-Ubuntu; CI installs via workflow):
-#   cmake, compilers, qt6-base-dev, qt6-svg-dev, libx11-dev, libxtst-dev, libpulse-dev, curl,
-#   strip (binutils), file, ImageMagick (convert) — optional if packaging/paxp2t.png exists
+#   build-essential (g++, linux-libc-dev for linux/input-event-codes.h), cmake,
+#   qt6-base-dev, qt6-svg-dev, libx11-dev, libxtst-dev, libpulse-dev, curl,
+#   strip/objdump (binutils), file, ImageMagick (convert) — optional if packaging/paxp2t.png exists
 #
 set -euo pipefail
 
@@ -27,6 +28,8 @@ Environment:
   REGENERATE_PAXP2T_ICON=1 Replace packaging/paxp2t.png even if it exists
   PAXP2T_SKIP_BUNDLE_TRIM=1  Skip aggressive post-bundle trimming (translations, extras)
   PAXP2T_SKIP_LDD_CHECK=1    Skip post-trim NEEDED audit (check-portable-ldd.sh)
+  PAXP2T_SKIP_GLIBC_CHECK=1  Skip GLIBC symbol cap (check-portable-glibc.sh)
+  PAXP2T_GLIBC_MAX=2.35      Max bundled GLIBC (passed to check-portable-glibc.sh --max)
   PAXP2T_ARCHIVE_GZIP=-9 Pass-through to gzip for the release tarball (-z levels; default -9 if unset).
 
   -h, --help               Show this help
@@ -273,6 +276,11 @@ trim_portable_bundle "${REPO_ROOT}/${APPDIR_NAME}"
 if [[ "${PAXP2T_SKIP_LDD_CHECK:-}" != "1" ]]; then
     echo "Checking portable NEEDED dependencies (check-portable-ldd.sh)..."
     bash "${SCRIPT_DIR}/check-portable-ldd.sh" --fail-orphans "${REPO_ROOT}/${APPDIR_NAME}"
+fi
+
+if [[ "${PAXP2T_SKIP_GLIBC_CHECK:-}" != "1" ]]; then
+    echo "Checking bundled GLIBC symbol versions (check-portable-glibc.sh)..."
+    bash "${SCRIPT_DIR}/check-portable-glibc.sh" --max "${PAXP2T_GLIBC_MAX:-2.35}" "${REPO_ROOT}/${APPDIR_NAME}"
 fi
 
 PORTABLE_TOP="paxp2t-${RELEASE_VERSION}-linux-x86_64-portable"

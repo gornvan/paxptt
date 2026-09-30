@@ -5,7 +5,7 @@ by either a mouse or a keyboard button.
 
 ## Features
 
-- X11 global mouse/keyboard bindings via XRecord (multiple PTT keys and mouse buttons configurable)
+- Global push-to-talk bindings via **evdev** (preferred) or **XRecord** on X11 fallback; one config list uses Linux `BTN_*` / `KEY_*` codes
 - PulseAudio total source mute/unmute via `pactl`
 - Sound indication of unmute/mute actions via in-process PulseAudio playback (libpulse)
   - sounds stored as `.wav` under `~/.local/paxp2t/sounds/`, easy to replace (PCM16 mono/stereo; restart after changing)
@@ -23,56 +23,55 @@ by either a mouse or a keyboard button.
 Defaults on first run (`~/.local/paxp2t/config.yml`):
 
 ```yaml
-BIND_KEYBOARD_KEYSYM: [Caps_Lock]
-BIND_MOUSE_BUTTON: [9]
+BIND_PTT: [BTN_EXTRA, KEY_CAPSLOCK]
 ```
 
-Both settings accept either a **single value** (legacy) or a **YAML inline list** — any listed control acts as push-to-talk (press = unmute, release = mute after delay).
-
-**Mouse** — X11 button numbers (`1` = left, `2` = middle, `3` = right, `9` = forward on many mice):
+`BIND_PTT` is a YAML list of **Linux evdev** names (`BTN_*` for mouse buttons, `KEY_*` for keyboard keys) or decimal `EV_KEY` codes. Any listed control acts as push-to-talk (press = unmute, release = mute after delay).
 
 ```yaml
-# One thumb button
-BIND_MOUSE_BUTTON: [9]
+# One thumb button - the Forward
+BIND_PTT: [BTN_EXTRA]
 
-# Two thumb buttons
-BIND_MOUSE_BUTTON: [9, 8]
+# Forward+Back thumb buttons + Caps Lock
+BIND_PTT: [BTN_EXTRA, BTN_SIDE, KEY_CAPSLOCK]
 
-# No mouse bind
-BIND_MOUSE_BUTTON: []
+# Keyboard Capslock only
+BIND_PTT: [KEY_CAPSLOCK]
 ```
 
-**Keyboard** — [X11 keysym](https://cgit.freedesktop.org/xorg/proto/xproto/tree/keysymdef.h) names (`Caps_Lock`, `F24`, `Pause`, …):
+**Input backends:** paxp2t tries **evdev** first (reads `/dev/input/by-id/*-event-mouse` and `*-event-kbd`). If devices cannot be opened, it falls back to **XRecord** on X11 and maps the same `BIND_PTT` tokens to X11 buttons/keycodes internally. Startup logs `PTT input: evdev` or `PTT input: xrecord`.
 
-```yaml
-# One key
-BIND_KEYBOARD_KEYSYM: [Caps_Lock]
+**Permissions (evdev):** the running user must be able to read event nodes, e.g. If You just want to test, give it to Yourself with `sudo usermod -aG input "$USER"`, then log out and in again.
+The advised way of running the app -- as a daemon with a dedicated user in the `input` group.
 
-# PTT on either of two keys
-BIND_KEYBOARD_KEYSYM: [Caps_Lock, Scroll_Lock]
-
-# No keyboard bind
-BIND_KEYBOARD_KEYSYM: []
-```
-
-The plural key names `BIND_MOUSE_BUTTONS` / `BIND_KEYBOARD_KEYSYMS` are accepted as aliases when reading; the file is rewritten with the singular names above.
-
-**Finding keysym names** — run in a terminal; each keypress prints a name:
+**Finding `BTN_*` / `KEY_*` codes (recommended)** — use evdev event devices, not X11 `xev` button numbers:
 
 ```bash
-# xev might need to be installed
-xev -event keyboard | grep --line-buffered keycode | sed -E 's/.*, ([^,^\)]*)\).*/\1/'
+# Mice (multi-mouse safe)
+.github/scripts/evdev-watch-mice.py
+# OR, to only show 275 and 276 buttons acting
+.github/scripts/evdev-watch-mice.py --watch 275,276
+
+# Keyboards (all *-event-kbd nodes)
+.github/scripts/evdev-watch-keyboard.py
+# OR, to only show 58 and 125 keys acting
+.github/scripts/evdev-watch-keyboard.py --watch 58,125
 ```
 
-**Finding mouse button numbers** — run the following command in a terminal to monitor mouse button presses:
+Press side buttons on each mouse; the script prints names like `BTN_SIDE (code=275)`. For keys, the keyboard script prints `KEY_CAPSLOCK (code=58)` and a ready-made `BIND_PTT: [KEY_CAPSLOCK]` hint.
+
+Python watch scripts and the C++ app share the same vendored UAPI [`.github/scripts/vendor/linux/input-event-codes.h`](.github/scripts/vendor/linux/input-event-codes.h). Regenerate lookup tables after updating it:
 
 ```bash
-xev -event button | grep -A2 --line-buffered ButtonPress
+.github/scripts/gen-evdev-code-tables.py
 ```
 
-Then press the desired button and look for lines like `ButtonPress event, serial ..., button N, ...`, where `N` is the X11 button number to use.
+That refreshes [`.github/scripts/evdev_code_tables.py`](.github/scripts/evdev_code_tables.py) (watch scripts) and [`cpp/src/evdev_code_name_table.cpp`](cpp/src/evdev_code_name_table.cpp) (`BIND_PTT` token parsing). **XRecord fallback** still uses a small hand-written map in [`evdev_to_x11_map.cpp`](cpp/src/evdev_to_x11_map.cpp) (evdev code → X11 button/keysym), not the full kernel table. \
+After such update the app has to be re-built. \
+Note that Your distro probably has the original of that mapping under `/usr/include/linux/`. In case any key codes are not mapping as expected, try comparing the one in the repo with the one on Your system. 
 
-Restart paxp2t after editing the config.
+Alternatives for listening to keyboard and mouse events: \
+`evtest` on a `*-event-kbd` node, or `showkey -s` in a TTY.
 
 ### Icons
 
@@ -100,14 +99,15 @@ Qt6 including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not t
 | Qt6 Core, Gui, Widgets | `qt6-base-dev` | Qt6 devel metapackage / `qt6-core-devel` etc. (same as any Qt6 app) |
 | Qt6 Svg | `qt6-svg-dev` | **`qt6-svg-devel`** (`libQt6Svg6` alone is runtime-only and will **not** satisfy CMake — `zypper wp …/Qt6SvgConfig.cmake`) |
 | X11 | `libx11-dev` | `libX11-devel` |
-| XTest (global input) | `libxtst-dev` | `libXtst-devel` |
+| XTest (XRecord input fallback) | `libxtst-dev` | `libXtst-devel` |
 | PulseAudio (indicator sounds) | `libpulse-dev` | `libpulse-devel` |
+| Linux input UAPI for compile | Vendored under `.github/scripts/vendor/linux/` (regen via `gen-evdev-code-tables.py`) | same checkout; no extra distro package required for `KEY_*`/`BTN_*` names |
 
 **Example (Debian/Ubuntu):**
 
 ```bash
 sudo apt-get install -y --no-install-recommends \
-  build-essential cmake \
+  build-essential cmake pkg-config \
   qt6-base-dev qt6-svg-dev libx11-dev libxtst-dev libpulse-dev
 ```
 
@@ -122,9 +122,13 @@ cmake --build build-cpp -j
 
 ### Run
 
+From the **repository root** (same place you ran `cmake`):
+
 ```bash
 ./build-cpp/paxp2t
 ```
+
+For **evdev** PTT, your user needs read access to `/dev/input/event*` (see **Binds** → permissions). The **tray** and **XRecord** fallback still need a display (`DISPLAY` set; X11 or XWayland with XCB). PulseAudio or PipeWire-Pulse is required for mute/unmute.
 
 ### Optional: portable AppDir tarball
 
@@ -172,6 +176,7 @@ After bundling and **`strip`**, the script **aggressively trims** leftovers linu
 - **`.github/scripts/prune-appdir-libs.sh`**: **`ldd` transitive closure** from **`usr/bin/paxp2t`** + every **`usr/plugins/**/*.so`**, then delete anything in **`usr/lib/`** not in that closure (large savings: codec stacks, **KF6Archive**, OpenSSL tails, **VirtualKeyboard**, … when not actually linked)
 - Empty icon dirs under **`usr/share/icons`**, then **every remaining empty directory** under the trimmed AppDir (drops hollow **`pixmaps/`** stubs, etc.)
 - **`.github/scripts/check-portable-ldd.sh --fail-orphans`** (after trim, before tarball): fails the build on unresolved SONAMEs or orphan **`usr/lib`** blobs — also runs automatically in the **Release** workflow via **`build-portable-bundle.sh`**
+- **`.github/scripts/check-portable-glibc.sh`** (same stage): fails if bundled ELFs need **GLIBC** newer than **`PAXP2T_GLIBC_MAX`** (default **2.35**, Ubuntu 22.04 baseline)
 
 It logs **`du -sh`** before and after. Set **`PAXP2T_SKIP_BUNDLE_TRIM=1`** to skip this whole pass.
 
@@ -214,7 +219,7 @@ cd paxp2t-v0.1.0-linux-x86_64-portable
 ./AppRun
 ```
 
-You still need a normal desktop stack on the host (X11, PulseAudio or PipeWire-Pulse, etc.); the bundle mainly removes the “install Qt6 from the distro” requirement.
+You still need PulseAudio or PipeWire-Pulse for mute/unmute. **PTT input** prefers **evdev** (`input` group); the portable tree is still **XCB/Qt-on-X11** for the tray UI. XRecord fallback needs an X11 session and `DISPLAY`.
 
 ### Flatpak later
 
@@ -231,7 +236,7 @@ Example:
   (required by .../usr/lib/libQt6Gui.so.6)
 ```
 
-The portable bundle **does not ship `libc.so.6`** — the dynamic linker always uses the host’s glibc. The bundled **Qt** libraries were built on a **newer** machine (e.g. GitHub Actions on a recent Ubuntu) and expect a **newer** glibc than your system provides. \
+The portable bundle **does not ship `libc.so.6`** — the dynamic linker always uses the host’s glibc. The bundled **Qt** libraries were built on a **newer** machine (including official releases built on **Ubuntu 22.04**, or any newer build host) and may expect a **newer** glibc than your system provides. \
 See **Build** section for build dependencies.
 
 **Fix:** rebuild on **your** machine so linuxdeploy copies Qt/libs linked against **your** glibc. From a checkout of this repo:
@@ -261,5 +266,5 @@ Check your host glibc with `ldd --version | head -1`. After a local portable reb
 
 ## Notes
 
-- Won't work on Wayland-based systems or any other system with no X11-served displays.
+- Portable **AppRun** uses the **XCB** platform plugin (not a native Wayland bundle). Evdev PTT can work without XRecord, but the tray still needs a display server Qt can reach (typically X11 or XWayland).
 - On desktops without tray host support, the app keeps working without tray. If PulseAudio is available, the sound indication will still work.
