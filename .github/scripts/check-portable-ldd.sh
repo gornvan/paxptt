@@ -107,7 +107,7 @@ _hybrid_allows_host() {
         libpulsecommon-*.so*) return 0 ;;
         libogg.so.0 | libvorbis.so.0 | libvorbisenc.so.2) return 0 ;;
         libFLAC.so.* | libmpg123.so.* | libopus.so.* | libspeexdsp.so.*) return 0 ;;
-        libEGL.so.1 | libGLX.so.0 | libOpenGL.so.0 | libGLdispatch.so.0) return 0 ;;
+        libEGL.so.1 | libGL.so.1 | libGLX.so.0 | libOpenGL.so.0 | libGLdispatch.so.0 | libgbm.so.1) return 0 ;;
         libfontconfig.so.1 | libfreetype.so.6 | libharfbuzz.so.0 | libgraphite2.so.3 | libexpat.so.1) return 0 ;;
         libz.so.1 | libbz2.so.1 | libbrotlicommon.so.1 | libbrotlidec.so.1) return 0 ;;
         libuuid.so.1 | libgpg-error.so.0) return 0 ;;
