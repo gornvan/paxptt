@@ -9,3 +9,4 @@ dist/
 packaging/*.png
 
 cpp/build/
+/AppDir/
