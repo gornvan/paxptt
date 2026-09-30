@@ -96,7 +96,7 @@ Qt6 including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not t
 
 | Role | Debian / Ubuntu | openSUSE |
 |------|-----------------|----------|
-| Qt6 Core, Gui, Widgets | `qt6-base-dev` | Qt6 devel metapackage / `qt6-core-devel` etc. (same as any Qt6 app) |
+| Qt6 Core, Gui, Widgets | `qt6-base-dev` (+ **`libgl-dev`** on minimal images so CMake finds `WrapOpenGL`) | Qt6 devel metapackage / `qt6-core-devel` etc. (same as any Qt6 app) |
 | Qt6 Svg | **`libqt6svg6-dev`** on Ubuntu 22.04; **`qt6-svg-dev`** on Ubuntu 24.04+ (same CMake target) | **`qt6-svg-devel`** (`libQt6Svg6` alone is runtime-only and will **not** satisfy CMake — `zypper wp …/Qt6SvgConfig.cmake`) |
 | X11 | `libx11-dev` | `libX11-devel` |
 | XTest (XRecord input fallback) | `libxtst-dev` | `libXtst-devel` |
@@ -107,7 +107,7 @@ Qt6 including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not t
 
 ```bash
 sudo apt-get install -y --no-install-recommends \
-  build-essential cmake pkg-config \
+  build-essential cmake pkg-config libgl-dev \
   qt6-base-dev libqt6svg6-dev libx11-dev libxtst-dev libpulse-dev
 ```
 
