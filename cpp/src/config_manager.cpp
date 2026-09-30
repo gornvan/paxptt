@@ -2,7 +2,6 @@
 
 #include <QDir>
 #include <QFile>
-#include <QRegularExpression>
 #include <QTextStream>
 
 namespace {
@@ -46,35 +45,6 @@ QStringList parseStringListValue(const QString &raw) {
     return {unquote(value)};
 }
 
-QList<int> parseIntListValue(const QString &raw, bool *ok) {
-    *ok = true;
-    QList<int> out;
-    const QStringList items = parseStringListValue(raw);
-    if (items.isEmpty()) {
-        return out;
-    }
-    if (items.size() == 1 && !raw.trimmed().startsWith('[')) {
-        bool itemOk = false;
-        const int single = items.first().toInt(&itemOk);
-        if (itemOk) {
-            out.append(single);
-            return out;
-        }
-        *ok = false;
-        return {};
-    }
-    for (const QString &item : items) {
-        bool itemOk = false;
-        const int parsed = item.toInt(&itemOk);
-        if (!itemOk) {
-            *ok = false;
-            return {};
-        }
-        out.append(parsed);
-    }
-    return out;
-}
-
 QString formatYamlStringList(const QList<QString> &items) {
     if (items.isEmpty()) {
         return QStringLiteral("[]");
@@ -86,29 +56,18 @@ QString formatYamlStringList(const QList<QString> &items) {
     return QStringLiteral("[") + parts.join(QStringLiteral(", ")) + QStringLiteral("]");
 }
 
-QString formatYamlIntList(const QList<int> &items) {
-    if (items.isEmpty()) {
-        return QStringLiteral("[]");
-    }
-    QStringList parts;
-    for (int item : items) {
-        parts.append(QString::number(item));
-    }
-    return QStringLiteral("[") + parts.join(QStringLiteral(", ")) + QStringLiteral("]");
-}
-
 QString toYamlBool(bool value) {
     return value ? "true" : "false";
 }
 
-QList<QString> normalizedKeyboardKeysyms(const QList<QString> &raw) {
+QList<QString> normalizedPttTokens(const QList<QString> &raw) {
     QList<QString> out;
-    for (QString keysym : raw) {
-        keysym = trim(keysym);
-        if (keysym.isEmpty() || keysym.compare(QStringLiteral("none"), Qt::CaseInsensitive) == 0) {
+    for (QString token : raw) {
+        token = trim(token);
+        if (token.isEmpty() || token.compare(QStringLiteral("none"), Qt::CaseInsensitive) == 0) {
             continue;
         }
-        out.append(keysym);
+        out.append(token);
     }
     return out;
 }
@@ -128,6 +87,7 @@ AppConfig ConfigManager::readConfig() {
     AppConfig parsed = defaults;
     QVariantMap extras;
     bool needsRewrite = false;
+    bool sawBindPtt = false;
 
     QFile file(configPath());
     if (!file.exists()) {
@@ -156,18 +116,14 @@ AppConfig ConfigManager::readConfig() {
         const QString key = trim(line.left(colon));
         const QString value = trim(line.mid(colon + 1));
 
-        if (key == "BIND_MOUSE_BUTTON" || key == "BIND_MOUSE_BUTTONS") {
-            bool ok = false;
-            const QList<int> out = parseIntListValue(value, &ok);
-            if (ok) {
-                parsed.bindMouseButtons = out;
-            } else {
-                needsRewrite = true;
-            }
+        if (key == "BIND_PTT") {
+            parsed.bindPtt = normalizedPttTokens(parseStringListValue(value));
+            sawBindPtt = true;
             continue;
         }
-        if (key == "BIND_KEYBOARD_KEYSYM" || key == "BIND_KEYBOARD_KEYSYMS") {
-            parsed.bindKeyboardKeysyms = normalizedKeyboardKeysyms(parseStringListValue(value));
+        if (key == "BIND_MOUSE_BUTTON" || key == "BIND_MOUSE_BUTTONS" || key == "BIND_KEYBOARD_KEYSYM" ||
+            key == "BIND_KEYBOARD_KEYSYMS" || key == "BIND_PTT_INPUT" || key == "BIND_INPUT") {
+            needsRewrite = true;
             continue;
         }
         if (key == "SHOW_TRAY_ICON") {
@@ -201,20 +157,21 @@ AppConfig ConfigManager::readConfig() {
         extras.insert(key, value);
     }
 
+    if (!sawBindPtt) {
+        parsed.bindPtt = defaults.bindPtt;
+        needsRewrite = true;
+    }
+
     if (needsRewrite) {
         writeConfig(parsed, extras);
         return parsed;
     }
 
-    // Backfill missing keys by comparing against parsed defaults.
     QFile verifyFile(configPath());
     if (verifyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         const QString content = QString::fromUtf8(verifyFile.readAll());
-        if (!content.contains("BIND_MOUSE_BUTTON:") ||
-            !content.contains("BIND_KEYBOARD_KEYSYM:") ||
-            !content.contains("SHOW_TRAY_ICON:") ||
-            !content.contains("MUTE_DELAY_MS:") ||
-            !content.contains("CACHE_INPUTS:")) {
+        if (!content.contains("BIND_PTT:") || !content.contains("SHOW_TRAY_ICON:") ||
+            !content.contains("MUTE_DELAY_MS:") || !content.contains("CACHE_INPUTS:")) {
             writeConfig(parsed, extras);
         }
     }
@@ -257,18 +214,13 @@ bool ConfigManager::writeConfig(const AppConfig &config, const QVariantMap &extr
     }
 
     QTextStream out(&file);
-    out << "BIND_KEYBOARD_KEYSYM: " << formatYamlStringList(config.bindKeyboardKeysyms) << "\n";
-    out << "BIND_MOUSE_BUTTON: " << formatYamlIntList(config.bindMouseButtons) << "\n";
+    out << "BIND_PTT: " << formatYamlStringList(config.bindPtt) << "\n";
     out << "CACHE_INPUTS: " << toYamlBool(config.cacheInputs) << "\n";
     out << "MUTE_DELAY_MS: " << qMax(0, config.muteDelayMs) << "\n";
     out << "SHOW_TRAY_ICON: " << toYamlBool(config.showTrayIcon) << "\n";
 
     for (auto it = extraKeys.constBegin(); it != extraKeys.constEnd(); ++it) {
-        const QString k = it.key();
-        if (k == "BIND_MOUSE_BUTTONS" || k == "BIND_KEYBOARD_KEYSYMS") {
-            continue;
-        }
-        out << k << ": " << it.value().toString() << "\n";
+        out << it.key() << ": " << it.value().toString() << "\n";
     }
     return true;
 }

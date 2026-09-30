@@ -5,8 +5,7 @@
 #include <QVariantMap>
 
 struct AppConfig {
-    QList<QString> bindKeyboardKeysyms = {QStringLiteral("Caps_Lock")};
-    QList<int> bindMouseButtons = {9};
+    QList<QString> bindPtt = {QStringLiteral("BTN_EXTRA"), QStringLiteral("KEY_CAPSLOCK")};
     bool cacheInputs = true;
     int muteDelayMs = 0;
     bool showTrayIcon = true;
