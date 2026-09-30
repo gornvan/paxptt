@@ -2,9 +2,12 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QRegularExpression>
 #include <QSet>
 #include <QStringList>
+
+#include <sys/stat.h>
 
 namespace {
 
@@ -76,7 +79,31 @@ QStringList discoverEvdevInputDevicePaths() {
         paths.insert(p);
     }
 
+    // Same event node often appears as by-id symlink and /dev/input/eventN — one fd per device.
     QStringList sorted = paths.values();
     sorted.sort();
-    return sorted;
+
+    QStringList unique;
+    QSet<quint64> seenInodes;
+    for (const QString &path : sorted) {
+        const QFileInfo info(path);
+        if (!info.exists()) {
+            continue;
+        }
+        const QString canon = info.canonicalFilePath();
+        if (canon.isEmpty()) {
+            continue;
+        }
+        struct stat st {};
+        if (stat(canon.toUtf8().constData(), &st) != 0) {
+            continue;
+        }
+        const quint64 inodeId = (static_cast<quint64>(st.st_dev) << 32) ^ static_cast<quint64>(st.st_ino);
+        if (seenInodes.contains(inodeId)) {
+            continue;
+        }
+        seenInodes.insert(inodeId);
+        unique.append(canon);
+    }
+    return unique;
 }

@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QDateTime>
 #include <QDebug>
 #include <QMetaObject>
 #include <QProcess>
@@ -52,6 +53,7 @@ int main(int argc, char *argv[]) {
     TrayIconManager tray;
 
     std::atomic<bool> pttIsDown{false};
+    std::atomic<qint64> suppressPressUntilMs{0};
 
     auto applyMute = [&]() {
         pulse.muteAllRecordingSources();
@@ -63,6 +65,9 @@ int main(int argc, char *argv[]) {
         QMetaObject::invokeMethod(
             &app,
             [&]() {
+                if (QDateTime::currentMSecsSinceEpoch() < suppressPressUntilMs.load()) {
+                    return;
+                }
                 const bool wasDown = pttIsDown.exchange(true);
                 if (wasDown) {
                     return;
@@ -78,7 +83,10 @@ int main(int argc, char *argv[]) {
         QMetaObject::invokeMethod(
             &app,
             [&]() {
-                pttIsDown.store(false);
+                if (!pttIsDown.exchange(false)) {
+                    return;
+                }
+                suppressPressUntilMs.store(QDateTime::currentMSecsSinceEpoch() + 200);
                 QTimer::singleShot(config.muteDelayMs, &app, [&]() {
                     if (!pttIsDown.load()) {
                         applyMute();
