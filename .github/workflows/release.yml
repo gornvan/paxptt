@@ -23,7 +23,7 @@ jobs:
             build-essential \
             cmake \
             qt6-base-dev \
-            qt6-svg-dev \
+            libqt6svg6-dev \
             libx11-dev \
             libxtst-dev \
             libpulse-dev \

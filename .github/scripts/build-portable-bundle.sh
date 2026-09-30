@@ -7,7 +7,7 @@
 #
 # Dependencies (install yourself on non-Ubuntu; CI installs via workflow):
 #   build-essential (g++, linux-libc-dev for linux/input-event-codes.h), cmake,
-#   qt6-base-dev, qt6-svg-dev, libx11-dev, libxtst-dev, libpulse-dev, curl,
+#   qt6-base-dev, libqt6svg6-dev (Jammy; 24.04+ may use qt6-svg-dev), libx11-dev, …
 #   strip/objdump (binutils), file, ImageMagick (convert) — optional if packaging/paxp2t.png exists
 #
 set -euo pipefail

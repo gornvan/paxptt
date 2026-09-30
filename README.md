@@ -97,7 +97,7 @@ Qt6 including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not t
 | Role | Debian / Ubuntu | openSUSE |
 |------|-----------------|----------|
 | Qt6 Core, Gui, Widgets | `qt6-base-dev` | Qt6 devel metapackage / `qt6-core-devel` etc. (same as any Qt6 app) |
-| Qt6 Svg | `qt6-svg-dev` | **`qt6-svg-devel`** (`libQt6Svg6` alone is runtime-only and will **not** satisfy CMake — `zypper wp …/Qt6SvgConfig.cmake`) |
+| Qt6 Svg | **`libqt6svg6-dev`** on Ubuntu 22.04; **`qt6-svg-dev`** on Ubuntu 24.04+ (same CMake target) | **`qt6-svg-devel`** (`libQt6Svg6` alone is runtime-only and will **not** satisfy CMake — `zypper wp …/Qt6SvgConfig.cmake`) |
 | X11 | `libx11-dev` | `libX11-devel` |
 | XTest (XRecord input fallback) | `libxtst-dev` | `libXtst-devel` |
 | PulseAudio (indicator sounds) | `libpulse-dev` | `libpulse-devel` |
@@ -108,7 +108,7 @@ Qt6 including **Svg** (tray icons are SVG files loaded via `QSvgRenderer`, not t
 ```bash
 sudo apt-get install -y --no-install-recommends \
   build-essential cmake pkg-config \
-  qt6-base-dev qt6-svg-dev libx11-dev libxtst-dev libpulse-dev
+  qt6-base-dev libqt6svg6-dev libx11-dev libxtst-dev libpulse-dev
 ```
 
 ### Compile
@@ -242,7 +242,7 @@ See **Build** section for build dependencies.
 **Fix:** rebuild on **your** machine so linuxdeploy copies Qt/libs linked against **your** glibc. From a checkout of this repo:
 
 ```bash
-# Install build deps from the **Build** section (qt6-base-dev, qt6-svg-dev, libx11-dev, libxtst-dev, …)
+# Install build deps from the **Build** section (qt6-base-dev, libqt6svg6-dev, libx11-dev, libxtst-dev, …)
 .github/scripts/build-portable-bundle.sh
 tar xf dist/paxp2t-*-linux-x86_64-portable.tar.gz
 cd paxp2t-*-linux-x86_64-portable
