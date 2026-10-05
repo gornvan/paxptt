@@ -2,7 +2,7 @@
 """
 Watch EV_KEY events from keyboard evdev nodes.
 
-Use this to find KEY_* names for BIND_PTT in ~/.local/pttd/config.yml
+Use this to find KEY_* names for BIND_PTT in ~/.local/p2td/config.yml
 (not X11 keysym names). Names come from vendored linux/input-event-codes.h tables.
 
 Requires read access to the devices (root or membership in group "input").

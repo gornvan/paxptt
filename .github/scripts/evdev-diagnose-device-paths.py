@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Compare evdev device discovery with what pttd uses (by-id + /proc merge).
+Compare evdev device discovery with what p2td uses (by-id + /proc merge).
 
 Run from repo root:
   .github/scripts/evdev-diagnose-device-paths.py
@@ -77,7 +77,7 @@ def main() -> int:
     for p in extra_kbd:
         print(f"    {p}  open: {try_open(p)}")
 
-    print(f"\n=== merged (pttd discoverEvdevInputDevicePaths): {len(merged)} paths ===")
+    print(f"\n=== merged (p2td discoverEvdevInputDevicePaths): {len(merged)} paths ===")
     mice_like = [p for p in merged if "mouse" in p or p in proc_mouse]
     print(f"  paths that look mouse-related: {len(mice_like)}")
     for p in merged:

@@ -16,7 +16,7 @@
 namespace {
 
 QString trayIconsDirPath() {
-    return QDir::homePath() + "/.local/pttd/icons";
+    return QDir::homePath() + "/.local/p2td/icons";
 }
 
 QString activeTrayIconPath() {
