@@ -41,5 +41,5 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/paxp2t-${{ github.ref_name }}-linux-x86_64-portable.tar.gz
+          files: dist/pttd-${{ github.ref_name }}-linux-x86_64-portable.tar.gz
           generate_release_notes: true

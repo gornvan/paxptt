@@ -75,7 +75,7 @@ QList<QString> normalizedPttTokens(const QList<QString> &raw) {
 } // namespace
 
 QString ConfigManager::configDirPath() {
-    return QDir::homePath() + "/.local/paxp2t";
+    return QDir::homePath() + "/.local/pttd";
 }
 
 QString ConfigManager::configPath() {

@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=paxp2t
+Name=pttd
 Comment=Push-to-talk (evdev / X11, PulseAudio)
-Exec=paxp2t
-Icon=paxp2t
+Exec=pttd
+Icon=pttd
 Categories=AudioVideo;Audio;

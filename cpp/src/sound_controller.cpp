@@ -41,7 +41,7 @@ bool fourCCEquals(const QByteArray &data, int offset, const char *tag) {
 } // namespace
 
 SoundController::SoundController() {
-    soundDir_ = QDir::homePath() + "/.local/paxp2t/sounds";
+    soundDir_ = QDir::homePath() + "/.local/pttd/sounds";
     mutePath_ = soundDir_ + "/mute.wav";
     unmutePath_ = soundDir_ + "/unmute.wav";
 }
@@ -227,7 +227,7 @@ void SoundController::playBuffer(const SoundBuffer &buffer) const {
     }
 
     int error = 0;
-    pa_simple *stream = pa_simple_new(nullptr, "paxp2t", PA_STREAM_PLAYBACK, nullptr, "indicator",
+    pa_simple *stream = pa_simple_new(nullptr, "pttd", PA_STREAM_PLAYBACK, nullptr, "indicator",
                                       &buffer.spec, nullptr, nullptr, &error);
     if (!stream) {
         if (!playbackWarned_) {

@@ -2,7 +2,7 @@
 # Audit portable AppDir NEEDED dependencies via transitive ldd (same seeds as prune-appdir-libs.sh).
 #
 # What this catches:
-#   - DT_NEEDED edges from usr/bin/paxp2t and every usr/plugins/**/*.so* (transitive for ELFs inside the AppDir).
+#   - DT_NEEDED edges from usr/bin/pttd and every usr/plugins/**/*.so* (transitive for ELFs inside the AppDir).
 #
 # What this does NOT catch (use LD_DEBUG=libs while exercising the app for those):
 #   - dlopen() / Qt QPluginLoader paths chosen only at runtime (e.g. a plugin removed from disk but never loaded).
@@ -11,10 +11,10 @@
 # Usage: check-portable-ldd.sh [--strict|--hybrid] [--fail-orphans] [--verbose] <AppDir-root>
 set -euo pipefail
 
-MODE="${PAXP2T_LDD_MODE:-hybrid}"
+MODE="${pttd_LDD_MODE:-hybrid}"
 VERBOSE=0
 FAIL_ORPHANS=0
-if [[ "${PAXP2T_LDD_FAIL_ORPHANS:-}" == "1" ]]; then
+if [[ "${pttd_LDD_FAIL_ORPHANS:-}" == "1" ]]; then
     FAIL_ORPHANS=1
 fi
 
@@ -31,8 +31,8 @@ Modes:
   strict            Every resolved .so must live under the AppDir (except ld-linux / vdso).
 
 Environment:
-  PAXP2T_LDD_MODE=strict|hybrid       Same as flags above.
-  PAXP2T_LDD_FAIL_ORPHANS=1           Treat orphan usr/lib blobs as failure (trim drift).
+  pttd_LDD_MODE=strict|hybrid       Same as flags above.
+  pttd_LDD_FAIL_ORPHANS=1           Treat orphan usr/lib blobs as failure (trim drift).
 
 Exit status:
   0  NEEDED closure OK for the selected mode (no missing SONAMEs).
@@ -41,8 +41,8 @@ Exit status:
   2  Usage / invalid arguments.
 
 Runtime audit (dlopen — not visible to ldd alone):
-  LD_DEBUG=libs LD_LIBRARY_PATH="$APPD/usr/lib" "$APPD/usr/bin/paxp2t" 2>&1 | tee /tmp/paxp2t-ld.log
-  grep -E 'calling init:|file=' /tmp/paxp2t-ld.log
+  LD_DEBUG=libs LD_LIBRARY_PATH="$APPD/usr/lib" "$APPD/usr/bin/pttd" 2>&1 | tee /tmp/pttd-ld.log
+  grep -E 'calling init:|file=' /tmp/pttd-ld.log
 EOF
 }
 
@@ -119,7 +119,7 @@ _audit() {
     local appdir="$1"
     local lib_dir="${appdir}/usr/lib"
     local prefix="${appdir}/"
-    local exe="${appdir}/usr/bin/paxp2t"
+    local exe="${appdir}/usr/bin/pttd"
 
     declare -A visited_elf=()
     declare -a queue=()

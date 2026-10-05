@@ -8,7 +8,7 @@
 # Dependencies (install yourself on non-Ubuntu; CI installs via workflow):
 #   build-essential (g++, linux-libc-dev for linux/input-event-codes.h), cmake,
 #   libgl-dev, qt6-base-dev, libqt6svg6-dev (Jammy; 24.04+ may use qt6-svg-dev), libx11-dev, …
-#   strip/objdump (binutils), file, ImageMagick (convert) — optional if packaging/paxp2t.png exists
+#   strip/objdump (binutils), file, ImageMagick (convert) — optional if packaging/pttd.png exists
 #
 set -euo pipefail
 
@@ -24,13 +24,13 @@ From repo root, optional RELEASE_VERSION defaults to git describe or local-<time
 Environment:
   BUILD_DIR                CMake binary dir (default: build-cpp, relative to repo root or absolute)
   OUT_DIR                  Where to write tarball (default: dist)
-  PAXP2T_RELEASE_TOOLS_DIR Cache for linuxdeploy AppImages (default: ~/.cache/paxp2t-release-tools)
-  REGENERATE_PAXP2T_ICON=1 Replace packaging/paxp2t.png even if it exists
-  PAXP2T_SKIP_BUNDLE_TRIM=1  Skip aggressive post-bundle trimming (translations, extras)
-  PAXP2T_SKIP_LDD_CHECK=1    Skip post-trim NEEDED audit (check-portable-ldd.sh)
-  PAXP2T_SKIP_GLIBC_CHECK=1  Skip GLIBC symbol cap (check-portable-glibc.sh)
-  PAXP2T_GLIBC_MAX=2.35      Max bundled GLIBC (passed to check-portable-glibc.sh --max)
-  PAXP2T_ARCHIVE_GZIP=-9 Pass-through to gzip for the release tarball (-z levels; default -9 if unset).
+  pttd_RELEASE_TOOLS_DIR Cache for linuxdeploy AppImages (default: ~/.cache/pttd-release-tools)
+  REGENERATE_pttd_ICON=1 Replace packaging/pttd.png even if it exists
+  pttd_SKIP_BUNDLE_TRIM=1  Skip aggressive post-bundle trimming (translations, extras)
+  pttd_SKIP_LDD_CHECK=1    Skip post-trim NEEDED audit (check-portable-ldd.sh)
+  pttd_SKIP_GLIBC_CHECK=1  Skip GLIBC symbol cap (check-portable-glibc.sh)
+  pttd_GLIBC_MAX=2.35      Max bundled GLIBC (passed to check-portable-glibc.sh --max)
+  pttd_ARCHIVE_GZIP=-9 Pass-through to gzip for the release tarball (-z levels; default -9 if unset).
 
   -h, --help               Show this help
 EOF
@@ -39,8 +39,8 @@ EOF
 trim_portable_bundle() {
     local root platdir f base dir
     root="$1"
-    if [[ "${PAXP2T_SKIP_BUNDLE_TRIM:-}" == "1" ]]; then
-        echo "Skipping bundle trim (PAXP2T_SKIP_BUNDLE_TRIM=1)"
+    if [[ "${pttd_SKIP_BUNDLE_TRIM:-}" == "1" ]]; then
+        echo "Skipping bundle trim (pttd_SKIP_BUNDLE_TRIM=1)"
         return 0
     fi
     if [[ ! -d "$root" ]]; then
@@ -172,7 +172,7 @@ cd "${REPO_ROOT}"
 
 BUILD_DIR="${BUILD_DIR:-build-cpp}"
 OUT_DIR="${OUT_DIR:-dist}"
-TOOLS_DIR="${PAXP2T_RELEASE_TOOLS_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/paxp2t-release-tools}"
+TOOLS_DIR="${pttd_RELEASE_TOOLS_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/pttd-release-tools}"
 
 mkdir -p "${TOOLS_DIR}"
 
@@ -189,16 +189,16 @@ if [[ -z "${RELEASE_VERSION}" ]]; then
     RELEASE_VERSION="local-$(date +%Y%m%d%H%M%S)"
 fi
 
-DESKTOP="${REPO_ROOT}/packaging/paxp2t.desktop"
+DESKTOP="${REPO_ROOT}/packaging/pttd.desktop"
 if [[ ! -f "${DESKTOP}" ]]; then
     echo "Missing desktop file (commit it): ${DESKTOP}" >&2
     exit 1
 fi
 
-PNG="${REPO_ROOT}/packaging/paxp2t.png"
+PNG="${REPO_ROOT}/packaging/pttd.png"
 mkdir -p "${REPO_ROOT}/packaging"
 
-if [[ -f "${PNG}" ]] && [[ "${REGENERATE_PAXP2T_ICON:-}" != "1" ]]; then
+if [[ -f "${PNG}" ]] && [[ "${REGENERATE_pttd_ICON:-}" != "1" ]]; then
     echo "Using existing ${PNG}"
 elif command -v convert >/dev/null 2>&1; then
     echo "Generating placeholder icon..."
@@ -207,20 +207,20 @@ elif command -v convert >/dev/null 2>&1; then
         -draw 'circle 64,64 64,10' \
         "${PNG}"
 else
-    echo "ImageMagick ''convert'' not found and packaging/paxp2t.png missing." >&2
-    echo "Install imagemagick or add packaging/paxp2t.png, or copy an icon manually." >&2
+    echo "ImageMagick ''convert'' not found and packaging/pttd.png missing." >&2
+    echo "Install imagemagick or add packaging/pttd.png, or copy an icon manually." >&2
     exit 1
 fi
 
 echo "CMake configure (${BUILD_DIR})..."
 cmake -S cpp -B "${BUILD_DIR}" \
     -DCMAKE_BUILD_TYPE=Release \
-    -DPAXP2T_RELEASE_MINIMAL=ON
+    -Dpttd_RELEASE_MINIMAL=ON
 
 echo "Build..."
 cmake --build "${BUILD_DIR}" -j "$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 
-EXE_ABS="${BIN_DIR}/paxp2t"
+EXE_ABS="${BIN_DIR}/pttd"
 if [[ ! -f "${EXE_ABS}" ]]; then
     echo "Binary not found: ${EXE_ABS}" >&2
     exit 1
@@ -273,18 +273,18 @@ find "${REPO_ROOT}/${APPDIR_NAME}" -type f \( -name '*.so' -o -name '*.so.*' \) 
 
 trim_portable_bundle "${REPO_ROOT}/${APPDIR_NAME}"
 
-if [[ "${PAXP2T_SKIP_LDD_CHECK:-}" != "1" ]]; then
+if [[ "${pttd_SKIP_LDD_CHECK:-}" != "1" ]]; then
     echo "Checking portable NEEDED dependencies (check-portable-ldd.sh)..."
     bash "${SCRIPT_DIR}/check-portable-ldd.sh" --fail-orphans "${REPO_ROOT}/${APPDIR_NAME}"
 fi
 
-if [[ "${PAXP2T_SKIP_GLIBC_CHECK:-}" != "1" ]]; then
+if [[ "${pttd_SKIP_GLIBC_CHECK:-}" != "1" ]]; then
     echo "Checking bundled GLIBC symbol versions (check-portable-glibc.sh)..."
-    bash "${SCRIPT_DIR}/check-portable-glibc.sh" --max "${PAXP2T_GLIBC_MAX:-2.35}" "${REPO_ROOT}/${APPDIR_NAME}"
+    bash "${SCRIPT_DIR}/check-portable-glibc.sh" --max "${pttd_GLIBC_MAX:-2.35}" "${REPO_ROOT}/${APPDIR_NAME}"
 fi
 
-PORTABLE_TOP="paxp2t-${RELEASE_VERSION}-linux-x86_64-portable"
-ARCHIVE_BASENAME="paxp2t-${RELEASE_VERSION}-linux-x86_64-portable.tar.gz"
+PORTABLE_TOP="pttd-${RELEASE_VERSION}-linux-x86_64-portable"
+ARCHIVE_BASENAME="pttd-${RELEASE_VERSION}-linux-x86_64-portable.tar.gz"
 ARCHIVE_PATH="${OUT_DIR}/${ARCHIVE_BASENAME}"
 
 rm -rf "${REPO_ROOT:?}/${PORTABLE_TOP}"
@@ -292,7 +292,7 @@ mv "${REPO_ROOT}/${APPDIR_NAME}" "${REPO_ROOT}/${PORTABLE_TOP}"
 
 mkdir -p "${OUT_DIR}"
 # GNU tar honours GZIP flags for deflate; default mirrors gzip -9 (smaller tarball, same unpacked tree).
-GZIP="${PAXP2T_ARCHIVE_GZIP:--9}" tar -czvf "${ARCHIVE_PATH}" -C "${REPO_ROOT}" "${PORTABLE_TOP}"
+GZIP="${pttd_ARCHIVE_GZIP:--9}" tar -czvf "${ARCHIVE_PATH}" -C "${REPO_ROOT}" "${PORTABLE_TOP}"
 rm -rf "${REPO_ROOT:?}/${PORTABLE_TOP}"
 
 echo "Done:"

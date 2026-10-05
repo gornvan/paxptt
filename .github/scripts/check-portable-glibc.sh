@@ -11,7 +11,7 @@ usage() {
     cat >&2 <<'EOF'
 Usage: check-portable-glibc.sh [--max MAJOR.MINOR] <AppDir-root>
 
-Scans bundled ELF files (usr/bin/paxp2t, usr/lib/**/*.so*) for GLIBC_* symbol versions.
+Scans bundled ELF files (usr/bin/pttd, usr/lib/**/*.so*) for GLIBC_* symbol versions.
 Exits 1 if any required version is greater than --max (default 2.35).
 EOF
 }
@@ -83,8 +83,8 @@ scan_elf() {
     fi
 }
 
-if is_elf "${APPDIR}/usr/bin/paxp2t"; then
-    scan_elf "${APPDIR}/usr/bin/paxp2t"
+if is_elf "${APPDIR}/usr/bin/pttd"; then
+    scan_elf "${APPDIR}/usr/bin/pttd"
 fi
 
 while IFS= read -r -d '' elf; do
