@@ -1,7 +1,7 @@
 # pttd
 
 `pttd` is a push-to-talk utility allowing to set system-wide unmute and mute trigger,
-by either a mouse or a keyboard button.
+by either mouse or keyboard press&release actions.
 
 ## Features
 
