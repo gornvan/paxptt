@@ -1,6 +1,6 @@
-# pttd
+# p2td
 
-`pttd` is a push-to-talk utility allowing to set system-wide unmute and mute trigger,
+`p2td` is a push-to-talk utility allowing to set system-wide unmute and mute trigger,
 by either mouse or keyboard press&release actions.
 
 ## Features
@@ -8,19 +8,19 @@ by either mouse or keyboard press&release actions.
 - Global push-to-talk bindings via **evdev** (preferred) or **XRecord** on X11 fallback; one config list uses Linux `BTN_*` / `KEY_*` codes
 - PulseAudio total source mute/unmute via `pactl`
 - Sound indication of unmute/mute actions via in-process PulseAudio playback (libpulse)
-  - sounds stored as `.wav` under `~/.local/pttd/sounds/`, easy to replace (PCM16 mono/stereo; restart after changing)
+  - sounds stored as `.wav` under `~/.local/p2td/sounds/`, easy to replace (PCM16 mono/stereo; restart after changing)
 - Tray icon via `QSystemTrayIcon` with:
   - a tray icon, toggling its color
   - `Open config`
   - `Terminate`
 - Typed config read/backfill/rewrite at:
-  - `~/.local/pttd/config.yml`
+  - `~/.local/p2td/config.yml`
 
 ## Configurability
 
 ### Binds (push-to-talk buttons and keys)
 
-Defaults on first run (`~/.local/pttd/config.yml`):
+Defaults on first run (`~/.local/p2td/config.yml`):
 
 ```yaml
 BIND_PTT: [BTN_EXTRA, KEY_CAPSLOCK]
@@ -39,7 +39,7 @@ BIND_PTT: [BTN_EXTRA, BTN_SIDE, KEY_CAPSLOCK]
 BIND_PTT: [KEY_CAPSLOCK]
 ```
 
-**Input backends:** pttd tries **evdev** first (reads `/dev/input/by-id/*-event-mouse` and `*-event-kbd`). If devices cannot be opened, it falls back to **XRecord** on X11 and maps the same `BIND_PTT` tokens to X11 buttons/keycodes internally. Startup logs `PTT input: evdev` or `PTT input: xrecord`.
+**Input backends:** p2td tries **evdev** first (reads `/dev/input/by-id/*-event-mouse` and `*-event-kbd`). If devices cannot be opened, it falls back to **XRecord** on X11 and maps the same `BIND_PTT` tokens to X11 buttons/keycodes internally. Startup logs `PTT input: evdev` or `PTT input: xrecord`.
 
 **Permissions (evdev):** the running user must be able to read event nodes, e.g. If You just want to test, give it to Yourself with `sudo usermod -aG input "$USER"`, then log out and in again.
 The advised way of running the app -- as a daemon with a dedicated user in the `input` group.
@@ -75,13 +75,13 @@ Alternatives for listening to keyboard and mouse events: \
 
 ### Icons
 
-After first run, You can replace the icons under `~/.local/pttd/icons/` with any svg You like.
+After first run, You can replace the icons under `~/.local/p2td/icons/` with any svg You like.
 Changing color is easy - just edit the .svg icons with a text editor and replace the color code of `fill` value in the `circle` tag.
 
 ## Considerations
-- Cannot mute sources selectively - do not expect _any_ of pulseaudio inputs to stay unmuted while pttd is active;
+- Cannot mute sources selectively - do not expect _any_ of pulseaudio inputs to stay unmuted while p2td is active;
 - Adaptive noise/echo cancellation codecs might get a bit mad with such mic behavior - in _some_ cases best disable them;
-- Caches sources at startup. After connecting a new mic or otherwise adding an input, please restart pttd. If You do that a lot, consider setting `CACHE_INPUTS` to `false`;
+- Caches sources at startup. After connecting a new mic or otherwise adding an input, please restart p2td. If You do that a lot, consider setting `CACHE_INPUTS` to `false`;
 
 ## Build
 
@@ -125,7 +125,7 @@ cmake --build build-cpp -j
 From the **repository root** (same place you ran `cmake`):
 
 ```bash
-./build-cpp/pttd
+./build-cpp/p2td
 ```
 
 For **evdev** PTT, your user needs read access to `/dev/input/event*` (see **Binds** → permissions). The **tray** and **XRecord** fallback still need a display (`DISPLAY` set; X11 or XWayland with XCB). PulseAudio or PipeWire-Pulse is required for mute/unmute.
@@ -139,10 +139,10 @@ Same repo script as [Releases (portable Linux)](#releases-portable-linux) — [`
 | `curl` | `curl` | fetch linuxdeploy AppImages |
 | `strip` | `binutils` | shrink bundled `.so` / executable |
 | `file` | `file` | ELF checks in bundle scripts |
-| `convert` | `imagemagick` | only if `packaging/pttd.png` is missing |
+| `convert` | `imagemagick` | only if `packaging/p2td.png` is missing |
 | `bash` | (preinstalled) | trim / audit scripts |
 
-linuxdeploy binaries are downloaded automatically on first run (cached under `~/.cache/pttd-release-tools`).
+linuxdeploy binaries are downloaded automatically on first run (cached under `~/.cache/p2td-release-tools`).
 
 ## Releases (portable Linux)
 
@@ -157,9 +157,9 @@ From the repo root, after installing build dependencies (same as README **Build*
 .github/scripts/build-portable-bundle.sh v9.9.9-test # optional explicit name for the tarball
 ```
 
-The tarball is written to **`dist/`** (`OUT_DIR`; override with env). linuxdeploy downloads are cached under **`~/.cache/pttd-release-tools`** unless you set **`pttd_RELEASE_TOOLS_DIR`**.
+The tarball is written to **`dist/`** (`OUT_DIR`; override with env). linuxdeploy downloads are cached under **`~/.cache/p2td-release-tools`** unless you set **`p2td_RELEASE_TOOLS_DIR`**.
 
-Pushing a version tag triggers the **Release** workflow, which runs the same script with the tag name and uploads **`dist/pttd-<tag>-linux-x86_64-portable.tar.gz`** to GitHub Releases.
+Pushing a version tag triggers the **Release** workflow, which runs the same script with the tag name and uploads **`dist/p2td-<tag>-linux-x86_64-portable.tar.gz`** to GitHub Releases.
 
 That bundle is an **AppDir-style tree**: [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) plus the Qt plugin copy Qt libs next to the binary so recipients do not need system Qt packages.
 
@@ -173,16 +173,16 @@ After bundling and **`strip`**, the script **aggressively trims** leftovers linu
 - **`platforminputcontexts`**: removes **IBus** and **Qt Virtual Keyboard** only (**Compose** context stays)
 - **`xcbglintegrations`** (EGL/GLX XCB backends not needed for tray + widgets here)
 - Obvious stray **Qt/KDE module** `.so` names (Quick, QML, Vulkan, Charts, Multimedia, NFC, …), **`*.a`**, **`*.debug`**, **`*.dwz`**
-- **`.github/scripts/prune-appdir-libs.sh`**: **`ldd` transitive closure** from **`usr/bin/pttd`** + every **`usr/plugins/**/*.so`**, then delete anything in **`usr/lib/`** not in that closure (large savings: codec stacks, **KF6Archive**, OpenSSL tails, **VirtualKeyboard**, … when not actually linked)
+- **`.github/scripts/prune-appdir-libs.sh`**: **`ldd` transitive closure** from **`usr/bin/p2td`** + every **`usr/plugins/**/*.so`**, then delete anything in **`usr/lib/`** not in that closure (large savings: codec stacks, **KF6Archive**, OpenSSL tails, **VirtualKeyboard**, … when not actually linked)
 - Empty icon dirs under **`usr/share/icons`**, then **every remaining empty directory** under the trimmed AppDir (drops hollow **`pixmaps/`** stubs, etc.)
 - **`.github/scripts/check-portable-ldd.sh --fail-orphans`** (after trim, before tarball): fails the build on unresolved SONAMEs or orphan **`usr/lib`** blobs — also runs automatically in the **Release** workflow via **`build-portable-bundle.sh`**
-- **`.github/scripts/check-portable-glibc.sh`** (same stage): fails if bundled ELFs need **GLIBC** newer than **`pttd_GLIBC_MAX`** (default **2.35**, Ubuntu 22.04 baseline)
+- **`.github/scripts/check-portable-glibc.sh`** (same stage): fails if bundled ELFs need **GLIBC** newer than **`p2td_GLIBC_MAX`** (default **2.35**, Ubuntu 22.04 baseline)
 
-It logs **`du -sh`** before and after. Set **`pttd_SKIP_BUNDLE_TRIM=1`** to skip this whole pass.
+It logs **`du -sh`** before and after. Set **`p2td_SKIP_BUNDLE_TRIM=1`** to skip this whole pass.
 
 What’s left is mostly **Qt Gui/Widgets/Core + Svg**, **XCB + X11-ish deps**, and **`libqxcb.so`**’s own dependencies.
 
-The script configures **`pttd_RELEASE_MINIMAL=ON`** for smaller Release binaries (**`-Os`**, section **`--gc-sections`**, **`--as-needed`**, **[LTO](https://cmake.org/cmake/help/latest/module/CheckIPOSupported.html)** when the toolchain supports it), **`strip`** on the exe and bundled **`*.so`**, then **`tar.gz`** with **`GZIP=-9`** (**`pttd_ARCHIVE_GZIP`** overrides) so the downloaded archive is tighter without changing what extractors receive. For an ordinary Release build without linuxdeploy you can apply the same flag when running CMake manually.
+The script configures **`p2td_RELEASE_MINIMAL=ON`** for smaller Release binaries (**`-Os`**, section **`--gc-sections`**, **`--as-needed`**, **[LTO](https://cmake.org/cmake/help/latest/module/CheckIPOSupported.html)** when the toolchain supports it), **`strip`** on the exe and bundled **`*.so`**, then **`tar.gz`** with **`GZIP=-9`** (**`p2td_ARCHIVE_GZIP`** overrides) so the downloaded archive is tighter without changing what extractors receive. For an ordinary Release build without linuxdeploy you can apply the same flag when running CMake manually.
 
 #### When the tree stops shrinking (~tens of MB uncompressed)
 
@@ -193,29 +193,29 @@ Portable builds use distro Qt (Release CI on **Ubuntu 22.04**), which on Ubuntu 
 Inspect what’s bulky with:
 
 ```bash
-du -h --max-depth=1 pttd-*-portable/usr/lib | sort -h
+du -h --max-depth=1 p2td-*-portable/usr/lib | sort -h
 ```
 
 Audit **NEEDED** dependencies (same seeds as the pruner: exe + every plugin `.so`). **`ldd` does not see `dlopen()`** — only link-time **`DT_NEEDED`** edges and whatever you explicitly **`ldd`** on (hence seeding plugins):
 
 ```bash
-.github/scripts/check-portable-ldd.sh pttd-*-portable          # hybrid: allow glibc/X11/Mesa/fonts on host
-.github/scripts/check-portable-ldd.sh --strict pttd-*-portable # everything else must be under the AppDir
+.github/scripts/check-portable-ldd.sh p2td-*-portable          # hybrid: allow glibc/X11/Mesa/fonts on host
+.github/scripts/check-portable-ldd.sh --strict p2td-*-portable # everything else must be under the AppDir
 ```
 
 For **runtime-only** loads (Qt picking a plugin after a menu click, GL drivers, NSS), exercise the app and capture the loader log:
 
 ```bash
-APPD="$(readlink -f pttd-*-portable)"
-LD_DEBUG=libs LD_LIBRARY_PATH="$APPD/usr/lib" "$APPD/usr/bin/pttd" 2>&1 | tee /tmp/pttd-ld.log
-grep -E 'calling init:|file=' /tmp/pttd-ld.log
+APPD="$(readlink -f p2td-*-portable)"
+LD_DEBUG=libs LD_LIBRARY_PATH="$APPD/usr/lib" "$APPD/usr/bin/p2td" 2>&1 | tee /tmp/p2td-ld.log
+grep -E 'calling init:|file=' /tmp/p2td-ld.log
 ```
 
 Extract the archive and run:
 
 ```bash
-tar xf pttd-v0.1.0-linux-x86_64-portable.tar.gz
-cd pttd-v0.1.0-linux-x86_64-portable
+tar xf p2td-v0.1.0-linux-x86_64-portable.tar.gz
+cd p2td-v0.1.0-linux-x86_64-portable
 ./AppRun
 ```
 
@@ -244,8 +244,8 @@ See **Build** section for build dependencies.
 ```bash
 # Install build deps from the **Build** section (qt6-base-dev, libqt6svg6-dev, libx11-dev, libxtst-dev, …)
 .github/scripts/build-portable-bundle.sh
-tar xf dist/pttd-*-linux-x86_64-portable.tar.gz
-cd pttd-*-linux-x86_64-portable
+tar xf dist/p2td-*-linux-x86_64-portable.tar.gz
+cd p2td-*-linux-x86_64-portable
 ./AppRun
 ```
 
@@ -254,14 +254,14 @@ Alternatively, build and run without linuxdeploy (same deps as **Build**):
 ```bash
 cmake -S cpp -B build-cpp
 cmake --build build-cpp -j
-./build-cpp/pttd
+./build-cpp/p2td
 ```
 
 Check your host glibc with `ldd --version | head -1`. After a local portable rebuild, optional sanity checks:
 
 ```bash
-./.github/scripts/check-portable-glibc.sh pttd-*-portable
-./.github/scripts/check-portable-ldd.sh pttd-*-portable
+./.github/scripts/check-portable-glibc.sh p2td-*-portable
+./.github/scripts/check-portable-ldd.sh p2td-*-portable
 ```
 
 ## Notes

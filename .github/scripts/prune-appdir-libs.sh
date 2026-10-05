@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Drop unused ELF shared libraries left in AppDir/usr/lib after linuxdeploy.
 #
-# Keeps every .so reachable from usr/bin/pttd and any usr/plugins/**/*.so*
+# Keeps every .so reachable from usr/bin/p2td and any usr/plugins/**/*.so*
 # via transitive ldd when LD_LIBRARY_PATH is AppDir/usr/lib first.
 # Everything else directly under usr/lib goes (plus broken symlinks).
 #
@@ -75,7 +75,7 @@ _run_prune() {
         queue+=("$c")
     }
 
-    exe="${appdir}/usr/bin/pttd"
+    exe="${appdir}/usr/bin/p2td"
     if [[ -f "$exe" ]]; then
         canon="$(readlink -f "$exe" 2>/dev/null || true)"
         [[ -n "$canon" ]] && _try_track "$canon"

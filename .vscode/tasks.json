@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build pttd",
+            "label": "Build p2td",
             "type": "shell",
             "command": "cmake -S cpp -B build-cpp && cmake --build build-cpp -j",
             "options": {

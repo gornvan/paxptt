@@ -44,7 +44,7 @@ void openConfigFile(const QString &path) {
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    app.setApplicationName("pttd");
+    app.setApplicationName("p2td");
 
     const AppConfig config = ConfigManager::readConfig();
 
