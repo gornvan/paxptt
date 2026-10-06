@@ -27,6 +27,8 @@ private:
     SoundBuffer unmuteSound_;
     mutable bool playbackWarned_ = false;
 
+    static QString packagedSoundsDir();
+
     void ensureSounds() const;
     void loadSounds();
     static QByteArray generateBeepPcm(double frequencyHz, double durationSeconds, double volume,

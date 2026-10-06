@@ -41,8 +41,7 @@ BIND_PTT: [KEY_CAPSLOCK]
 
 **Input backends:** p2td tries **evdev** first (reads `/dev/input/by-id/*-event-mouse` and `*-event-kbd`). If devices cannot be opened, it falls back to **XRecord** on X11 and maps the same `BIND_PTT` tokens to X11 buttons/keycodes internally. Startup logs `PTT input: evdev` or `PTT input: xrecord`.
 
-**Permissions (evdev):** the running user must be able to read event nodes, e.g. If You just want to test, give it to Yourself with `sudo usermod -aG input "$USER"`, then log out and in again.
-The advised way of running the app -- as a daemon with a dedicated user in the `input` group.
+**Permissions (evdev):** `/dev/input/event*` nodes are usually `root:input`. Prefer installing **`p2td` as `root:input` with mode `2755` (setgid)** so only the **`p2td` process** gets group `input`, not your whole login account (see **openSUSE package** and **portable** sections below). For a quick local build test you can use `sudo usermod -aG input "$USER"` and re-login instead.
 
 **Finding `BTN_*` / `KEY_*` codes (recommended)** — use evdev event devices, not X11 `xev` button numbers:
 
@@ -128,7 +127,35 @@ From the **repository root** (same place you ran `cmake`):
 ./build-cpp/p2td
 ```
 
-For **evdev** PTT, your user needs read access to `/dev/input/event*` (see **Binds** → permissions). The **tray** and **XRecord** fallback still need a display (`DISPLAY` set; X11 or XWayland with XCB). PulseAudio or PipeWire-Pulse is required for mute/unmute.
+For **evdev** PTT, the **`p2td` binary** needs read access to `/dev/input/event*` (see **Binds** → permissions). The **tray** and **XRecord** fallback still need a display (`DISPLAY` set; X11 or XWayland with XCB). PulseAudio or PipeWire-Pulse is required for mute/unmute.
+
+### openSUSE package (zypper)
+
+RPM **`p2td`** installs `/usr/bin/p2td` with **setgid `input`**, a **systemd user** unit, desktop entry, and generated default sounds under `/usr/share/p2td/sounds/`.
+
+```bash
+# Build RPM from a git checkout (creates ~/rpmbuild/SOURCES tarball)
+packaging/opensuse/build-rpm.sh
+sudo zypper install ~/rpmbuild/RPMS/*/p2td-*.rpm
+
+systemctl --user enable --now p2td.service
+```
+
+Config and tray assets stay under **`~/.local/p2td/`**. Default indicator WAVs are **generated at package build** ([`packaging/generate-default-sounds.py`](packaging/generate-default-sounds.py), same beeps as the app’s built-in fallback) into `/usr/share/p2td/sounds/`; missing files under `~/.local/p2td/sounds/` are copied from there on first run.
+
+### Portable tarball: evdev after unpack
+
+Extracting the archive does **not** set setgid or `root:input`. To use **evdev** without adding your user to group **`input`**, install the binary system-wide (bundled libs alongside it), then fix permissions once:
+
+```bash
+tar xf p2td-*-linux-x86_64-portable.tar.gz
+cd p2td-*-linux-x86_64-portable
+sudo cp -a usr/lib/. /usr/lib/
+sudo install -m 2755 -o root -g input usr/bin/p2td /usr/bin/p2td
+p2td    # run as your normal session user
+```
+
+Use **`/usr/bin/p2td`** (or **`AppRun`** only for a trial without evdev). **`AppRun`** alone does not apply setgid.
 
 ### Optional: portable AppDir tarball
 
@@ -219,7 +246,7 @@ cd p2td-v0.1.0-linux-x86_64-portable
 ./AppRun
 ```
 
-You still need PulseAudio or PipeWire-Pulse for mute/unmute. **PTT input** prefers **evdev** (`input` group); the portable tree is still **XCB/Qt-on-X11** for the tray UI. XRecord fallback needs an X11 session and `DISPLAY`.
+You still need PulseAudio or PipeWire-Pulse for mute/unmute. **PTT input** prefers **evdev** (setgid **`input`** on `/usr/bin/p2td` after system install — see **Portable tarball: evdev after unpack**); the portable tree is still **XCB/Qt-on-X11** for the tray UI. XRecord fallback needs an X11 session and `DISPLAY`.
 
 ### Flatpak later
 

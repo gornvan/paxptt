@@ -51,18 +51,33 @@ void SoundController::ensureAndLoadSounds() {
     loadSounds();
 }
 
+QString SoundController::packagedSoundsDir() {
+    return QStringLiteral("/usr/share/p2td/sounds");
+}
+
 void SoundController::ensureSounds() const {
     QDir dir(soundDir_);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
 
-    if (!QFile::exists(unmutePath_)) {
-        generateBeepWav(unmutePath_, 100.0, 0.06, 0.04);
-    }
-    if (!QFile::exists(mutePath_)) {
-        generateBeepWav(mutePath_, 50.0, 0.06, 0.04);
-    }
+    const QString shareDir = packagedSoundsDir();
+    const auto ensureOne = [&](const QString &destPath, const QString &fileName, double freq) {
+        if (QFile::exists(destPath)) {
+            return;
+        }
+        const QString fromShare = shareDir + QLatin1Char('/') + fileName;
+        if (QFile::exists(fromShare)) {
+            if (QFile::copy(fromShare, destPath)) {
+                return;
+            }
+            qWarning() << "Failed to copy" << fromShare << "to" << destPath;
+        }
+        generateBeepWav(destPath, freq, 0.06, 0.04);
+    };
+
+    ensureOne(unmutePath_, QStringLiteral("unmute.wav"), 100.0);
+    ensureOne(mutePath_, QStringLiteral("mute.wav"), 50.0);
 }
 
 void SoundController::loadSounds() {

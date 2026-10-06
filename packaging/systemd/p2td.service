@@ -1,0 +1,12 @@
+[Unit]
+Description=Push-to-talk daemon (p2td)
+PartOf=graphical-session.target
+After=graphical-session.target pipewire-pulse.service
+
+[Service]
+ExecStart=/usr/bin/p2td
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

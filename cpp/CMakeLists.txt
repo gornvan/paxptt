@@ -54,4 +54,40 @@ if(p2td_RELEASE_MINIMAL AND p2td_HAVE_RELEASE_IPO)
     set_property(TARGET p2td PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
-install(TARGETS p2td RUNTIME DESTINATION bin)
+include(GNUInstallDirs)
+
+set(P2TD_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
+set(P2TD_PACKAGING_DIR "${P2TD_REPO_ROOT}/packaging")
+set(P2TD_GENERATED_SOUNDS_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated-sounds")
+
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+install(TARGETS p2td RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+install(CODE "
+    execute_process(
+        COMMAND \"${Python3_EXECUTABLE}\"
+            \"${P2TD_PACKAGING_DIR}/generate-default-sounds.py\"
+            \"${P2TD_GENERATED_SOUNDS_DIR}\"
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+")
+
+install(DIRECTORY "${P2TD_GENERATED_SOUNDS_DIR}/"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/p2td/sounds
+    FILES_MATCHING PATTERN "*.wav"
+)
+
+install(FILES "${P2TD_PACKAGING_DIR}/systemd/p2td.service"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/user
+)
+
+install(FILES "${P2TD_PACKAGING_DIR}/p2td.desktop"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
+if(EXISTS "${P2TD_PACKAGING_DIR}/p2td.png")
+    install(FILES "${P2TD_PACKAGING_DIR}/p2td.png"
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/48x48/apps
+    )
+endif()
